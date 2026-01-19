@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PiggyBank Pro</title>
+    <link rel="icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #ffffff; }
+        #loader { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; font-size: 3rem; background: #f8fafc; z-index: 0; }
+        iframe { width: 100%; height: 100%; border: none; display: block; position: relative; z-index: 1; }
+    </style>
+</head>
+<body>
+    <div id="loader">🐷</div>
+    
+    <!-- ⚠️ REPLACE THIS URL WITH YOUR NEW DEPLOYED SCRIPT URL -->
+    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzBwvFagMq6w3iEvq8MXK4g12Kq-xY8WQF7XvOJ867jkH_oVdPG50koVUu8vV0oFooN/exec" allow="clipboard-read; clipboard-write"></iframe>
+
+    <script>
+        const iframe = document.getElementById('app-frame');
+        let pushInterval = null;
+
+        function startPushingSession() {
+            const sessionStr = localStorage.getItem('pb_session_v2'); // Use v2 to avoid conflicts
+            let payload = null;
+
+            if (sessionStr) {
+                try {
+                    let session = JSON.parse(sessionStr);
+                    // Force downgrade role to Child on fresh load for safety
+                    if (session.role === 'Parent') {
+                        session.role = 'Child';
+                        // Update local storage so role persists as Child until unlocked
+                        localStorage.setItem('pb_session_v2', JSON.stringify(session));
+                    }
+                    payload = session;
+                } catch(e) {
+                    console.error("Session parse error", e);
+                }
+            }
+
+            // Task 2: Immediate Push function
+            const push = () => {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        type: 'AUTO_LOGIN',
+                        payload: payload
+                    }, '*');
+                }
+            };
+
+            // Immediate attempt
+            push();
+
+            // Interval backup (for network latency)
+            pushInterval = setInterval(push, 300);
+        }
+
+        // Task 2: Startup Speed - Trigger immediately when DOM is ready for interaction
+        iframe.onload = () => {
+            console.log("Netlify: Iframe loaded, starting push...");
+            startPushingSession();
+        };
+
+        window.addEventListener('message', function(e) {
+            if (!e.data) return;
+
+            // App received data, stop spamming
+            if (e.data.type === 'LOGIN_RECEIVED') {
+                if (pushInterval) {
+                    clearInterval(pushInterval);
+                    pushInterval = null;
+                }
+            }
+
+            // Task 1: Save Full Dashboard Cache
+            if (e.data.type === 'SAVE_SESSION') {
+                try {
+                    // e.data.payload contains { fid, cid, role, cachedData: {...} }
+                    localStorage.setItem('pb_session_v2', JSON.stringify(e.data.payload));
+                    if(pushInterval) clearInterval(pushInterval);
+                } catch(err) {
+                    console.error("Quota exceeded usually", err);
+                }
+            }
+            
+            if (e.data.type === 'CLEAR_SESSION') {
+                localStorage.removeItem('pb_session_v2');
+            }
+        });
+    </script>
+</body>
+</html>
