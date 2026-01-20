@@ -34,10 +34,8 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 优化 1: 极致压缩底部留白 */
         #bottom-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
-            /* 核心修改：只保留 50% 的安全区域高度，大幅减少留白 */
             padding-bottom: calc(env(safe-area-inset-bottom) * 0.5 + 2px); 
             padding-top: 6px; 
             z-index: 50;
@@ -337,6 +335,7 @@
 
         function showAuth() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
         
+        // 优化 2: Loader for switching
         function showLoader(msg="Loading...") {
             const l = document.getElementById('global-loader');
             const m = document.getElementById('loader-msg');
@@ -346,12 +345,26 @@
         function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
 
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+        
+        // Fix 2 & 3: Clean up forms & Admin PIN
         function openModal(id) { 
             const el = document.getElementById(id); if(el) el.classList.add('open'); 
+            
+            if(id === 'admin-login-modal') {
+                document.getElementById('admin-pin-input').value = ''; // Clean Admin PIN
+            }
+
             if(id === 'expense-modal') {
-                const btn = document.querySelector('[data-val="Other"]'); if(btn) selectCategory('Other', btn);
-                if(document.getElementById('exp-account')) document.getElementById('exp-account').value = ""; 
+                const btn = document.querySelector('[data-val="Book"]'); 
+                if(btn) selectCategory('Book', btn); // Reset category to Book default
+                
+                document.getElementById('exp-amount').value = ""; // Clear Amount
+                document.getElementById('exp-desc').value = "";   // Clear Desc
+                document.getElementById('exp-account').value = ""; 
+                
                 document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
+                
+                // Bug 5 Fix: Update Hints
                 const bal = state.balances;
                 document.getElementById('bal-hint-spend').innerText = '$' + (bal.spend||0).toFixed(2);
                 document.getElementById('bal-hint-share').innerText = '$' + (bal.share||0).toFixed(2);
@@ -523,6 +536,10 @@
             const a=parseFloat(document.getElementById('exp-amount').value), d=document.getElementById('exp-desc').value, ac=document.getElementById('exp-account').value, cat=document.getElementById('exp-category').value;
             if(!a || !ac) return toast('Amount & Account required','error');
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error');
+            
+            // Fix 1: Mandatory Note for Other
+            if (cat === 'Other' && (!d || d.trim() === "")) return toast('Description required for "Other"', 'error');
+
             closeModal('expense-modal');
             const k = ac.split(' ')[0].toLowerCase();
             state.balances[k] -= a; document.getElementById(`bal-${k}`).innerText = '$'+state.balances[k].toFixed(2);
@@ -574,12 +591,14 @@
         function selectAvatar(btn, emoji) { const row = btn.closest('.child-row'); row.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); row.querySelector('.c-avatar').value = emoji; }
         
         async function registerFamily() { 
+            // 优化 4: Prevent double click
             const btn = document.getElementById('reg-btn');
             if (btn.disabled) return;
 
             const name = document.getElementById('reg-family-name').value;
             const parentPin = document.getElementById('reg-parent-pin').value.trim().toUpperCase();
             if(!name) return toast('Family name required', 'error');
+            // 优化 2: Validate Parent PIN
             if(!isValidPin(parentPin)) return toast('Parent PIN invalid. Need Letter+3digits (e.g. P888)', 'error');
             
             const rows = document.querySelectorAll('.child-row'); 
@@ -594,6 +613,7 @@
 
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`PIN Conflict: Child ${cName} cannot have same code as Parent.`, 'error');
+                // 优化 2: Validate Child PIN
                 if(!isValidPin(cCode)) return toast(`Child ${cName} PIN invalid. Need Letter+3digits (e.g. A123)`, 'error');
                 if (s + v + h !== 100) return toast(`Child ${cName}: Ratios must equal 100%`, 'error');
                 if (amt > 100000) return toast(`Child ${cName}: Amount too high (Max 100k)`, 'error'); 
@@ -616,7 +636,20 @@
             } 
         }
         
-        function selectCategory(c,b) { document.getElementById('exp-category').value=c; document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }
+        function selectCategory(c,b) { 
+            document.getElementById('exp-category').value=c; 
+            document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); 
+            b.classList.add('selected'); 
+            
+            // 优化 2: Dynamic Placeholder
+            const descInput = document.getElementById('exp-desc');
+            if (c === 'Other') {
+                descInput.placeholder = "What is it? (Required)";
+            } else {
+                descInput.placeholder = "Optional note...";
+            }
+        }
+
         function selectAccount(a) { document.getElementById('exp-account').value=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); document.querySelector(`[data-val="${a}"]`).classList.add('selected'); }
         
         // 优化 4: Logout logic - Don't clear email
