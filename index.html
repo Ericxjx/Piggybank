@@ -93,10 +93,14 @@
         .avatar-btn { font-size: 2rem; padding: 5px; border-radius: 50%; opacity: 0.6; transition: all 0.2s; border: 2px solid transparent; }
         .avatar-btn.selected { opacity: 1; transform: scale(1.2); border-color: #4f46e5; background: #eef2ff; }
         
-        /* Tooltip Style */
         .tooltip { position: relative; display: inline-block; cursor: pointer; color: #94a3b8; margin-left: 4px; }
         .tooltip .tooltip-text { visibility: hidden; width: 200px; background-color: #334155; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 10px; font-weight: normal; line-height: 1.4; pointer-events: none; }
         .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* 🔴 修复 7: 全新的 Activity Filter 样式 (iOS Segmented Control 风格) */
+        .filter-container { background: #f1f5f9; padding: 4px; border-radius: 12px; display: flex; gap: 2px; }
+        .filter-btn { flex: 1; padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; color: #64748b; transition: all 0.2s; background: transparent; }
+        .filter-btn.active { background: #fff; color: #4f46e5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transform: scale(1.02); }
     </style>
 </head>
 <body class="loading">
@@ -135,12 +139,10 @@
             </div>
             <div id="step-2" class="hidden animate-in slide-in-from-right duration-300">
                 <h2 class="text-2xl font-black text-indigo-600 mb-2">Setup Profile</h2>
-                <!-- 修复: 移除红色警告，PIN 规则放宽 -->
                 <div class="space-y-6 mt-4">
                     <div class="bg-indigo-50 p-5 rounded-[2rem] border border-indigo-100">
                         <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">Parent Admin PIN</label>
                         <input id="reg-parent-pin" placeholder="e.g. 8888 or ALEX" class="w-full p-3 bg-white text-indigo-600 rounded-xl font-black text-center text-2xl tracking-widest outline-none uppercase border-2 border-transparent focus:border-indigo-500" maxlength="8">
-                        <!-- 修复: 更新说明文字 -->
                         <div class="text-[10px] text-slate-400 text-center mt-2 font-bold px-4">This is your Login Key. Please remember it. You can also find it via email.</div>
                     </div>
                     <div id="children-list" class="space-y-4"></div>
@@ -204,13 +206,14 @@
 
                 <div class="flex justify-between items-center mb-3 px-1">
                     <h3 class="font-bold text-slate-800 text-sm">Activity</h3>
-                    <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                    <!-- 🔴 修复 7: 优化的 Filter UI -->
+                    <div class="filter-container">
                         <button onclick="filterHistory('week', this)" class="filter-btn active">Week</button>
                         <button onclick="filterHistory('month', this)" class="filter-btn">Month</button>
                         <button onclick="filterHistory('all', this)" class="filter-btn">All</button>
                     </div>
                 </div>
-                <div id="history-list" class="space-y-2"></div>
+                <div id="history-list" class="space-y-2 pb-8"></div>
             </main>
 
             <!-- TAB 2: GOALS -->
@@ -240,13 +243,6 @@
         </div>
     </div>
 
-    <!-- NAVIGATION -->
-    <nav id="bottom-nav" class="hidden flex justify-around">
-        <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
-        <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
-        <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
-    </nav>
-
     <!-- MODALS -->
     <div id="expense-modal" class="modal">
         <div class="modal-box">
@@ -274,24 +270,24 @@
                 </button>
             </div>
             <input type="hidden" id="exp-account" value="">
+            <!-- 🔴 修复 4: 动态 Placeholder -->
             <input type="text" id="exp-desc" placeholder="Optional note..." class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none font-bold transition-all border border-transparent focus:border-indigo-300">
             <button onclick="submitExpense()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Confirm</button>
             <button onclick="closeModal('expense-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
         </div>
     </div>
     
-    <!-- Other Modals -->
     <div id="profile-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-4 text-slate-800 text-center">Edit Profile</h2><div id="profile-edit-form"></div><button onclick="submitProfileEdit()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black mt-4 shadow-lg">Save Changes</button><button onclick="closeModal('profile-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     
-    <!-- 修复: 更新 Admin Modal 支持修改家庭名称 -->
+    <!-- 🔴 修复 6: 家长设置直接回显 PIN，移除 Optional -->
     <div id="update-admin-modal" class="modal">
         <div class="modal-box text-center">
             <h2 class="text-xl font-black mb-4 text-indigo-600">Family Settings</h2>
             <label class="block text-[10px] font-bold text-slate-400 uppercase text-left mb-1 ml-1">Family Name</label>
             <input type="text" id="update-fam-name" class="w-full p-4 bg-slate-50 rounded-2xl mb-4 font-bold outline-none border border-slate-200">
             
-            <label class="block text-[10px] font-bold text-slate-400 uppercase text-left mb-1 ml-1">New Admin PIN (Optional)</label>
-            <input type="text" id="new-admin-pin" placeholder="Leave blank to keep current" class="w-full p-4 bg-slate-50 rounded-2xl mb-1 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase text-left mb-1 ml-1">Admin PIN</label>
+            <input type="text" id="new-admin-pin" class="w-full p-4 bg-slate-50 rounded-2xl mb-1 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase">
             
             <button onclick="submitUpdateParentProfile()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg mt-4">Save Changes</button>
             <button onclick="closeModal('update-admin-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
@@ -304,14 +300,11 @@
     <div id="admin-login-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-indigo-600">Parent Access</h2><input type="text" id="admin-pin-input" placeholder="Enter Admin PIN" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase"><button onclick="submitAdminLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Verify</button><button onclick="closeModal('admin-login-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="redeem-modal" class="modal"><div class="modal-box text-center"><div class="text-6xl mb-4">🎁</div><h2 class="text-xl font-black mb-2 text-slate-800">Redeem Goal?</h2><p id="redeem-msg" class="text-sm font-bold text-slate-500 mb-6"></p><div class="flex gap-3"><button onclick="closeModal('redeem-modal')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold">Cancel</button><button id="redeem-confirm-btn" class="flex-1 bg-emerald-500 text-white py-3 rounded-2xl font-black shadow-lg shadow-emerald-200">Yes, Buy It!</button></div></div></div>
     <div id="reward-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-emerald-600 text-center">🌟 Give Reward</h2><input type="number" id="rew-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-emerald-100 mb-6 outline-none py-2 text-emerald-600"><input type="text" id="rew-desc" placeholder="Reason (e.g. Chores)" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none font-bold"><button onclick="submitReward()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-200">Send Money</button><button onclick="closeModal('reward-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
-    
-    <!-- 修复: Transfer Modal 逻辑更新 -->
     <div id="transfer-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-indigo-600 text-center">Move Money</h2><input type="number" id="trans-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-slate-100 mb-6 outline-none py-2"><div class="flex flex-col gap-2 mb-6"><select id="trans-from" onchange="updateTransferOptions()" class="p-3 bg-rose-50 rounded-xl font-bold text-rose-500 outline-none"><option value="Spend Acc">From Spend</option><option value="Save Acc">From Save</option><option value="Share Acc">From Share</option></select><div class="text-center text-slate-300">⬇</div><select id="trans-to" class="p-3 bg-emerald-50 rounded-xl font-bold text-emerald-500 outline-none"><option value="Spend Acc">To Spend</option><option value="Save Acc">To Save</option><option value="Share Acc">To Share</option></select></div><button onclick="submitTransfer()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg">Execute</button><button onclick="closeModal('transfer-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
-    
     <div id="goal-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-slate-800">New Goal 🎯</h2><input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none"><input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none"><button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Goal</button><button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
 
     <script>
-        // ⚠️⚠️⚠️ 替换你的 URL ⚠️⚠️⚠️
+        // ⚠️⚠️⚠️ 替换 URL ⚠️⚠️⚠️
         const API_URL = "https://piggybank-backend.vercel.app/api"; 
 
         if ('serviceWorker' in navigator) {
@@ -320,7 +313,7 @@
             .catch(err => console.error('SW Fail', err));
         }
 
-        let state = { fid: null, cid: null, role: null, children: [], transactions: [], goals: [], balances: {spend:0,save:0,share:0}, currentChildObj: {} };
+        let state = { fid: null, cid: null, role: null, children: [], transactions: [], goals: [], balances: {spend:0,save:0,share:0}, currentChildObj: {}, parentPin: '' };
         let myChart = null;
 
         function toast(msg, type='success') { const div = document.createElement('div'); div.className = `toast ${type}`; div.innerText = msg; document.getElementById('toast-container').appendChild(div); setTimeout(() => div.remove(), 3000); }
@@ -338,10 +331,8 @@
             return data;
         }
 
-        // 修复 3: 放宽 PIN 规则
         function isValidPin(pin) {
             const p = pin.toUpperCase().trim();
-            // 允许至少 4 位字符，不强制首字母
             return /^[A-Z0-9]{4,}$/.test(p);
         }
 
@@ -353,7 +344,6 @@
             if (cached) {
                 try {
                     const d = JSON.parse(cached);
-                    // 修复: 自动降级为 Child 角色逻辑保留
                     if (d.role === 'Parent') { d.role = 'Child'; localStorage.setItem('pb_cache', JSON.stringify(d)); }
                     state.fid = d.fid; state.cid = d.cid; state.role = d.role;
                     try { renderDash(d.data); } catch(e) { console.warn("Cache invalid"); }
@@ -371,23 +361,33 @@
         function openModal(id) { 
             const el = document.getElementById(id); if(el) el.classList.add('open'); 
             if(id === 'expense-modal') {
+                // 🔴 修复 5: 重置输入框和提示
+                document.getElementById('exp-amount').value = '';
+                document.getElementById('exp-desc').value = '';
                 const btn = document.querySelector('[data-val="Other"]'); if(btn) selectCategory('Other', btn);
                 if(document.getElementById('exp-account')) document.getElementById('exp-account').value = ""; 
                 document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
+                
                 const bal = state.balances;
                 document.getElementById('bal-hint-spend').innerText = '$' + (bal.spend||0).toFixed(2);
                 document.getElementById('bal-hint-share').innerText = '$' + (bal.share||0).toFixed(2);
                 document.getElementById('bal-hint-save').innerText = '$' + (bal.save||0).toFixed(2);
             }
             if(id === 'admin-login-modal') document.getElementById('admin-pin-input').value = '';
-            // 修复: Transfer Modal 更新选项
-            if(id === 'transfer-modal') updateTransferOptions();
+            if(id === 'transfer-modal') {
+                document.getElementById('trans-amount').value = '';
+                updateTransferOptions();
+            }
+            if(id === 'reward-modal') {
+                 document.getElementById('rew-amount').value = '';
+                 document.getElementById('rew-desc').value = '';
+            }
         }
 
-        // 修复 5: 打开 Admin Modal
         function openAdminModal() {
             document.getElementById('update-fam-name').value = document.getElementById('display-family').innerText;
-            document.getElementById('new-admin-pin').value = '';
+            // 🔴 修复 6: 自动回显 PIN
+            document.getElementById('new-admin-pin').value = state.parentPin || '';
             openModal('update-admin-modal');
         }
 
@@ -417,6 +417,8 @@
             const isParent = state.role === 'Parent';
             const c = d.currentChild || {};
             state.currentChildObj = c;
+            state.parentPin = d.parentPin; // Store PIN
+            
             const bal = c.balances || {spend:0, save:0, share:0};
             state.balances = bal;
             state.transactions = d.transactions || [];
@@ -562,12 +564,15 @@
             const a=parseFloat(document.getElementById('exp-amount').value), d=document.getElementById('exp-desc').value, ac=document.getElementById('exp-account').value, cat=document.getElementById('exp-category').value;
             if(!a || !ac) return toast('Amount & Account required','error');
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error');
-            // 修复 10: 如果是 Other，描述必填
             if (cat === 'Other' && !d) return toast("Please enter a description for 'Other'", 'error');
             
+            // 🔴 修复 5: 余额检查
+            const balKey = ac.split(' ')[0].toLowerCase();
+            const curBal = state.balances[balKey] || 0;
+            if (a > curBal) return toast("Insufficient funds!", 'error');
+
             closeModal('expense-modal');
-            const k = ac.split(' ')[0].toLowerCase();
-            state.balances[k] -= a; document.getElementById(`bal-${k}`).innerText = '$'+state.balances[k].toFixed(2);
+            state.balances[balKey] -= a; document.getElementById(`bal-${balKey}`).innerText = '$'+state.balances[balKey].toFixed(2);
             state.transactions.unshift({desc: d||cat, amount: -a, account: ac, category: cat, date: new Date().toISOString()}); renderHistory();
             try{await api('addExpense',{amount:a, description:d||cat, account:ac, category: cat}); fetchDash(false);} catch(e){toast(e.message,'error'); fetchDash(false);} 
         }
@@ -581,24 +586,30 @@
             try { await api('sendOTP', {email}, false); toast('Sent!'); let c=60; const t=setInterval(()=>{ c--; btn.innerText=`${c}s`; if(c<=0){clearInterval(t);btn.disabled=false;btn.innerText="Get Code";} },1000); } catch(e) { toast(e.message,'error'); btn.disabled=false; btn.innerText="Get Code"; } 
         }
 
-        // 修复 1: Verify 按钮 Loading 状态
         async function verifyOTP(){ 
             const btn = document.getElementById('otp-verify-btn');
             btn.disabled = true; btn.innerText = "Verifying...";
             try { 
                 const r=await api('verifyOTP',{email:document.getElementById('reg-email').value, otp:document.getElementById('reg-otp').value}); 
+                
+                // 🔴 修复 2: 用户已存在逻辑
+                if (r.status === 'EXISTING_USER') {
+                    toast(`Account found for ${r.familyName}! Login details sent.`, 'success');
+                    setTimeout(() => goToAuth(), 2000);
+                    return;
+                }
+
                 document.getElementById('reg-parent-pin').value=r.suggestedPin; 
                 document.getElementById('step-1').classList.add('hidden'); 
                 document.getElementById('step-2').classList.remove('hidden'); 
                 if(document.getElementById('children-list').innerHTML==='') addChildRow('children-list'); 
+                btn.disabled = false; btn.innerText = "Verify ➡";
             } catch(e) { 
                 toast(e.message,'error'); 
-            } finally {
                 btn.disabled = false; btn.innerText = "Verify ➡";
-            }
+            } 
         }
         
-        // 修复 4: Tooltip
         function addChildRow(containerId) { 
             const container = document.getElementById(containerId); 
             const div = document.createElement('div'); 
@@ -656,7 +667,6 @@
                 const h = parseInt(r.querySelector('.c-r-share').value) || 0;
                 const amt = parseFloat(r.querySelector('.c-amt').value) || 0;
 
-                // 修复 3: 必填校验 & 查重
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`Conflict: Child ${cName} PIN same as Parent.`, 'error');
                 if(!isValidPin(cCode)) return toast(`Child ${cName} PIN invalid (4+ chars)`, 'error');
@@ -677,18 +687,20 @@
                 state={fid:r.familyId, cid:r.childId, role:'Parent'}; 
                 await fetchDash(true); 
             }catch(e){
-                // 修复 2: 账号已存在逻辑
-                if (e.message.includes("Account exists")) {
-                    toast(e.message, 'error');
-                    setTimeout(() => goToAuth(), 3000); // 3秒后跳转登录
-                } else {
-                    toast(e.message,'error');
-                }
+                toast(e.message,'error');
                 btn.disabled = false; btn.innerText = "Finish Setup 🎉";
             } 
         }
         
-        function selectCategory(c,b) { document.getElementById('exp-category').value=c; document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }
+        function selectCategory(c,b) { 
+            document.getElementById('exp-category').value=c; 
+            document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); 
+            b.classList.add('selected');
+            // 🔴 修复 4: 动态 Placeholder
+            const input = document.getElementById('exp-desc');
+            input.placeholder = (c === 'Other') ? "Required: What was this for?" : "Optional note...";
+        }
+        
         function selectAccount(a) { document.getElementById('exp-account').value=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); document.querySelector(`[data-val="${a}"]`).classList.add('selected'); }
         
         function logout() { localStorage.removeItem('pb_cache'); location.reload(); }
@@ -717,10 +729,9 @@
             container.innerHTML = ''; 
             addChildRow('profile-edit-form'); 
             const row = container.querySelector('.child-row'); 
-            // 修复 8: 数据回显修复
             row.querySelector('.c-name').value = child.name; 
             row.querySelector('.c-code').value = child.code; 
-            row.querySelector('.c-amt').value = child.weeklyAmt; // 确保这里拿到的是 correct value
+            row.querySelector('.c-amt').value = child.weeklyAmt; 
             row.querySelector('.c-r-spend').value = child.ratios.spend; 
             row.querySelector('.c-r-save').value = child.ratios.save; 
             row.querySelector('.c-r-share').value = child.ratios.share; 
@@ -746,18 +757,23 @@
             closeModal('profile-modal'); 
             try { await api('updateChildProfile', data); toast('Updated'); fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
         }
+
         async function submitReward(){ 
             const a=parseFloat(document.getElementById('rew-amount').value), d=document.getElementById('rew-desc').value; 
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             closeModal('reward-modal'); 
-            // Optimistic update - assume spend for now or just wait for fetch
-            state.balances['spend'] += a; 
-            document.getElementById('bal-spend').innerText = '$'+state.balances.spend.toFixed(2);
-            confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
-            try{await api('addReward',{amount:a,description:d});toast('Sent');fetchDash(false);}catch(e){toast(e.message,'error');} 
+            
+            // 🔴 修复 3: Reward UX - 丝滑动画
+            toast('Reward Sent! 🌟', 'success');
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            
+            // 乐观更新：这里简单处理，实际分账由后端完成，fetchDash 会修正
+            state.transactions.unshift({desc: d||"Reward", amount: a, account: "Spend Acc", category: "Reward", date: new Date().toISOString()}); 
+            renderHistory();
+            
+            try{await api('addReward',{amount:a,description:d}); fetchDash(false);}catch(e){toast(e.message,'error');} 
         }
         
-        // 修复 10: Transfer 验证 & 互斥
         function updateTransferOptions() {
             const fromVal = document.getElementById('trans-from').value;
             const toSelect = document.getElementById('trans-to');
@@ -777,11 +793,9 @@
         }
         async function submitGoal(){ const n=document.getElementById('goal-name').value,t=document.getElementById('goal-target').value; closeModal('goal-modal'); try{await api('addGoal',{name:n,target:t});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         function openRedeemModal(id, amt, name) { document.getElementById('redeem-msg').innerText = `Use $${amt} from Save Jar to buy "${name}"?`; document.getElementById('redeem-confirm-btn').onclick = () => confirmRedeem(id, amt, name); openModal('redeem-modal'); }
-        // 修复 9: 确保 childId 传递
         async function confirmRedeem(id, amt, name) { closeModal('redeem-modal'); try { await api('redeemGoal', {id, amount:amt, name, childId: state.cid}); toast('Redeemed!'); fetchDash(false); } catch(e) { toast(e.message, 'error'); } }
         async function doReview(id,v){ try{await api('updateReview',{id,review:v});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         
-        // 修复 5: 提交家长配置更新
         async function submitUpdateParentProfile() { 
             const p = document.getElementById('new-admin-pin').value;
             const n = document.getElementById('update-fam-name').value;
@@ -801,7 +815,6 @@
         function goToSignup() { document.getElementById('step-1').classList.remove('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('reg-email').value = ''; document.getElementById('reg-otp').value = ''; document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
         function goToAuth() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
 
-        // 修复 6: 加速退出动画 (50ms -> 10ms)
         function handleParentExit() {
             showLoader("Switching...");
             setTimeout(async () => {
