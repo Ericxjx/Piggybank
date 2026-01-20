@@ -60,30 +60,28 @@
         
         /* ✅ 3. 底部导航栏：原生 iOS 毛玻璃质感 & 完美高度 */
         #bottom-nav { 
-            position: fixed; 
-            bottom: 0; left: 0; right: 0; 
-            z-index: 50;
+    position: fixed; 
+    bottom: 0; left: 0; right: 0; 
+    z-index: 50;
 
-            /* 背景与毛玻璃：增加饱和度更通透 */
-            background: rgba(255, 255, 255, 0.90); 
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-top: 0.5px solid rgba(0,0,0,0.1); 
+    /* 核心修改 1：让背景色稍微透明一点，看起来不那么“厚重” */
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid rgba(0,0,0,0.1);
 
-            /* 高度控制核心 */
-            height: var(--nav-height); /* 内容高度固定 */
-            padding-bottom: env(safe-area-inset-bottom); /* 仅底部填充安全区 */
-            box-sizing: content-box; /* 关键：让高度不包含 padding，自动延伸背景色 */
-            
-            /* 布局 */
-            display: flex;
-            align-items: center; 
-            justify-content: space-around;
-            padding-top: 0;
-            
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
-        }
-
+    /* 核心修改 2：不要用 padding 把高度撑开，而是用固定高度 */
+    /* 我们定死导航栏内容高度为 50px */
+    height: calc(50px + env(safe-area-inset-bottom)); 
+    
+    /* 关键：让图标靠上排列，不要居中，这样下巴的留白看起来是“通透”的而不是“实心”的 */
+    display: flex;
+    align-items: flex-start; 
+    padding-top: 8px; /* 图标距离顶部的距离 */
+    
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+}
         /* 🔒 防止导航栏在登录页偷跑 (ID 优先级高，需强制隐藏) */
         #bottom-nav.hidden { display: none !important; }
 
