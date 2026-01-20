@@ -27,51 +27,30 @@
             display: flex;
             flex-direction: column;
             overflow: hidden; 
-            /* 顶部安全区 + 一点呼吸空间 */
-            padding-top: calc(env(safe-area-inset-top) + 10px); 
+            padding-top: env(safe-area-inset-top); 
         }
 
-        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 110px; -webkit-overflow-scrolling: touch; } 
+        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 90px; -webkit-overflow-scrolling: touch; } 
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 优化重点：底部导航栏视觉下沉 */
+        /* 优化 1: 极致压缩底部留白 */
         #bottom-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
+            /* 核心修改：只保留 50% 的安全区域高度，大幅减少留白 */
+            padding-bottom: calc(env(safe-area-inset-bottom) * 0.5 + 2px); 
+            padding-top: 6px; 
             z-index: 50;
-            
-            /* 核心：吃掉 10px 的安全区，让图标下沉，紧贴 Home Bar */
-            /* 对于无安全区的手机(max逻辑)，保持 12px 的底部距离 */
-            padding-bottom: max(12px, calc(env(safe-area-inset-bottom) - 10px));
-            padding-top: 8px; /* 顶部留白减少 */
-            
-            background: rgba(255, 255, 255, 0.94); 
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 0.5px solid rgba(0,0,0,0.05);
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.03);
+            background: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(16px);
+            border-top: 1px solid #f1f5f9;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
         }
 
-        /* 内部容器：强制高度，保证居中 */
-        .nav-inner {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            height: 50px; /* 固定高度，防止被内容撑开 */
-            width: 100%;
-        }
-
-        .nav-btn { 
-            color: #94a3b8; 
-            transition: transform 0.1s, color 0.1s; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; padding-bottom: 2px; }
         .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
-        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin-top: 4px; transition: width 0.2s; }
-        .nav-btn.active .nav-indicator { width: 20px; }
+        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 2px auto 0; transition: width 0.2s; }
+        .nav-btn.active .nav-indicator { width: 24px; }
 
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
         .toast { background: rgba(15, 23, 42, 0.95); color: white; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: slideDown 0.2s forwards; pointer-events: auto; font-size: 13px; font-weight: 600; text-align: center; }
@@ -158,8 +137,8 @@
     </div>
 
     <!-- 3. MAIN APP -->
-    <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden">
-        <header class="px-4 pb-2 shrink-0 pt-2">
+    <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
+        <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
                 <select id="child-select" onchange="handleParentChildSwitch(this.value)" class="bg-transparent text-indigo-800 font-bold text-sm outline-none px-2 flex-1"></select>
                 <button onclick="openModal('update-admin-modal')" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-xl font-bold text-xs shadow-sm border border-indigo-200 mr-2">🔑 PIN</button>
@@ -247,12 +226,10 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav id="bottom-nav" class="hidden">
-        <div class="nav-inner">
-            <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1"><span class="text-2xl">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
-            <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1"><span class="text-2xl">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
-            <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1"><span class="text-2xl">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
-        </div>
+    <nav id="bottom-nav" class="hidden flex justify-around">
+        <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
+        <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
+        <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
     </nav>
 
     <!-- MODALS -->
@@ -360,7 +337,6 @@
 
         function showAuth() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
         
-        // 优化 2: Loader for switching
         function showLoader(msg="Loading...") {
             const l = document.getElementById('global-loader');
             const m = document.getElementById('loader-msg');
@@ -376,7 +352,6 @@
                 const btn = document.querySelector('[data-val="Other"]'); if(btn) selectCategory('Other', btn);
                 if(document.getElementById('exp-account')) document.getElementById('exp-account').value = ""; 
                 document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
-                // Bug 5 Fix: Update Hints
                 const bal = state.balances;
                 document.getElementById('bal-hint-spend').innerText = '$' + (bal.spend||0).toFixed(2);
                 document.getElementById('bal-hint-share').innerText = '$' + (bal.share||0).toFixed(2);
@@ -728,32 +703,38 @@
         function goToSignup() { document.getElementById('step-1').classList.remove('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('reg-email').value = ''; document.getElementById('reg-otp').value = ''; document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
         function goToAuth() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
 
-        // 优化 1: Logic - Single Child direct switch with Loader Animation
+        // 优化 1: Fix stuck logic - Force hide loader
         function handleParentExit() {
-            // 优化 2: Show Loader immediately for feedback
             showLoader("Switching...");
-            
-            // Allow small delay for UI to render loader
-            setTimeout(() => {
-                if (state.children && state.children.length === 1) {
-                    switchChild(state.children[0].id);
-                } else if (state.children && state.children.length > 1) {
+            setTimeout(async () => {
+                try {
+                    if (state.children && state.children.length === 1) {
+                        await switchChild(state.children[0].id);
+                    } else if (state.children && state.children.length > 1) {
+                        hideLoader();
+                        const grid = document.getElementById('child-pick-grid');
+                        grid.innerHTML = state.children.map(c => `<button onclick="switchChild('${c.id}')" class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center active:scale-95 transition-transform"><span class="text-3xl mb-2">${c.avatar}</span><span class="font-bold text-slate-700 text-xs">${c.name}</span></button>`).join('');
+                        openModal('pick-child-modal');
+                    } else {
+                        logout();
+                    }
+                } catch(e) {
                     hideLoader();
-                    const grid = document.getElementById('child-pick-grid');
-                    grid.innerHTML = state.children.map(c => `<button onclick="switchChild('${c.id}')" class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center active:scale-95 transition-transform"><span class="text-3xl mb-2">${c.avatar}</span><span class="font-bold text-slate-700 text-xs">${c.name}</span></button>`).join('');
-                    openModal('pick-child-modal');
-                } else {
                     logout();
                 }
             }, 50);
         }
 
-        function switchChild(id) { 
+        async function switchChild(id) { 
             showLoader("Switching...");
             state.cid = id; 
             state.role = 'Child'; 
             closeModal('pick-child-modal'); 
-            fetchDash(true); 
+            try {
+                await fetchDash(false); // We control loader
+            } finally {
+                hideLoader();
+            }
         }
 
         init();
