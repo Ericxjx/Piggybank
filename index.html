@@ -56,48 +56,79 @@
         /* ✅ 核心修改：浮动导航栏 (Floating Island) */
         #bottom-nav { 
             position: fixed; 
-            /* 距离底部的距离：20px + 安全区高度 */
+            /* 底部距离：留出安全区 + 20px 悬浮感 */
             bottom: calc(20px + env(safe-area-inset-bottom)); 
             
-            /* 水平居中 */
+            /* 居中定位 */
             left: 50%;
             transform: translateX(-50%);
             
-            /* 宽度控制：手机上占 90%，但在大屏上限制最大 380px */
-            width: 90%;
-            max-width: 380px;
-            height: 64px; /* 稍微加高一点，显得更有质感 */
+            /* 📏 宽度对齐：左右各留 16px，与顶部 Header 的 Padding 对齐 */
+            width: calc(100% - 32px);
+            max-width: 440px; /* 限制最大宽度，防止在 iPad 上太宽 */
+            height: 70px; /* 稍微加高，增加点击舒适度 */
             
-            /* 玻璃拟态效果 */
-            background: rgba(255, 255, 255, 0.90); 
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            /* 💎 质感核心：高通透毛玻璃 */
+            background: rgba(255, 255, 255, 0.75); /* 更透明 */
+            backdrop-filter: blur(25px) saturate(200%); /* 强模糊 + 色彩增益 */
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             
-            /* 胶囊圆角 */
-            border-radius: 24px;
+            /* 形状 */
+            border-radius: 35px; /* 全圆角胶囊状 */
             
-            /* 边框和阴影 */
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+            /* 🎨 边框与阴影：增加层次感 */
+            /* 1px 半透明白边框，模拟玻璃边缘反光 */
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            /* 复合阴影：一层深色投影 + 一层内部高光 */
+            box-shadow: 
+                0 20px 40px -10px rgba(0, 0, 0, 0.12), /* 外部投影 */
+                inset 0 1px 0 rgba(255, 255, 255, 0.8); /* 顶部内高光 */
             
             z-index: 50;
             display: flex;
             align-items: center; 
-            justify-content: space-around;
+            justify-content: space-evenly; /* 图标分布更均匀 */
             padding: 0 10px;
         }
 
-        /* 强制隐藏，防止 ID 优先级导致偷跑 */
+        /* 强制隐藏 */
         #bottom-nav.hidden { display: none !important; }
 
-        .nav-btn { color: #94a3b8; transition: all 0.2s; flex: 1; display: flex; flex-direction: column; items-center; justify-center; gap: 3px; height: 100%; border-radius: 16px; }
-        /* 选中状态：加深颜色，稍微放大 */
-        .nav-btn.active { color: #4f46e5; transform: translateY(-2px); }
+        /* 按钮样式微调 */
+        .nav-btn { 
+            color: #94a3b8; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            items-center; 
+            justify-content: center; 
+            gap: 4px; 
+            height: 100%; 
+            border-radius: 20px; 
+        }
         
-        /* 指示器改成小圆点，更符合悬浮风格 */
-        .nav-indicator { height: 4px; width: 4px; background: #4f46e5; border-radius: 50%; margin-top: 2px; transition: all 0.2s; opacity: 0; transform: scale(0); }
+        /* 选中状态：更明显的颜色变化和位移 */
+        .nav-btn.active { 
+            color: #4f46e5; 
+            text-shadow: 0 0 20px rgba(79, 70, 229, 0.3); /* 文字微发光 */
+            transform: translateY(-2px); 
+        }
+        
+        /* 指示器：小圆点 */
+        .nav-indicator { 
+            height: 5px; 
+            width: 5px; 
+            background: #4f46e5; 
+            border-radius: 50%; 
+            margin-top: 2px; 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* 弹性动画 */
+            opacity: 0; 
+            transform: scale(0); 
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.4);
+        }
         .nav-btn.active .nav-indicator { opacity: 1; transform: scale(1); }
-
+        
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
         .toast { background: rgba(15, 23, 42, 0.95); color: white; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: slideDown 0.2s forwards; pointer-events: auto; font-size: 13px; font-weight: 600; text-align: center; }
         .toast.error { background: rgba(220, 38, 38, 0.95); }
