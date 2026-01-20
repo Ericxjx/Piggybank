@@ -39,8 +39,8 @@
             animation: fadeIn 0.2s forwards; 
             height: 100%; 
             overflow-y: auto; 
-            /* 🔴 修改 1: 减少底部留白，使用 calc 动态计算，刚好盖过导航栏即可 */
-            padding-bottom: calc(65px + env(safe-area-inset-bottom)); 
+            /* 🟢 优化: 底部留白计算，确保不被导航栏遮挡，也不过分空旷 */
+            padding-bottom: calc(90px + env(safe-area-inset-bottom)); 
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
@@ -50,26 +50,26 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* 🟢 优化: 微信/iOS 风格底部导航栏 */
         #bottom-nav { 
             position: fixed; 
             bottom: 0; left: 0; right: 0; 
-            background: rgba(255, 255, 255, 0.98); 
+            background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(20px);
-            border-top: 1px solid #f1f5f9; /* 颜色变淡一点 */
-            padding-bottom: env(safe-area-inset-bottom); 
-            height: calc(56px + env(safe-area-inset-bottom)); /* 稍微调低高度 */
+            border-top: 1px solid #e2e8f0;
+            /* 关键: 内边距延伸到底部安全区，防止黑条 */
+            padding-bottom: max(10px, env(safe-area-inset-bottom)); 
+            padding-top: 10px;
             z-index: 50;
             display: flex;
-            align-items: center; /* 修复 CSS 语法 */
-            padding-top: 4px; 
+            align-items: center;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
         }
 
-        /* 修复 CSS 语法: items-center 不是标准CSS，改为 align-items */
-        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; items-center; justify-center; gap: 4px; }
         .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
-        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 2px auto 0; transition: width 0.2s; }
-        .nav-btn.active .nav-indicator { width: 24px; }
+        .nav-indicator { height: 4px; width: 24px; background: #4f46e5; border-radius: 99px; margin-top: 4px; transition: opacity 0.2s; opacity: 0; }
+        .nav-btn.active .nav-indicator { opacity: 1; }
 
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
         .toast { background: rgba(15, 23, 42, 0.95); color: white; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: slideDown 0.2s forwards; pointer-events: auto; font-size: 13px; font-weight: 600; text-align: center; }
@@ -115,6 +115,7 @@
         <div id="loader-msg" class="text-sm font-bold text-slate-500">Starting...</div>
     </div>
 
+    <!-- 1. AUTH SCREEN -->
     <div id="auth-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-50 overflow-y-auto hidden">
         <div class="text-center mb-10 text-indigo-600"><div class="text-7xl mb-4">🐷</div><h1 class="text-4xl font-black">PiggyBank</h1></div>
         <div class="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-xl">
@@ -125,6 +126,7 @@
         </div>
     </div>
 
+    <!-- 2. SIGNUP WIZARD -->
     <div id="signup-screen" class="fixed inset-0 z-50 bg-white p-6 overflow-y-auto hidden no-scrollbar" style="padding-top: calc(env(safe-area-inset-top) + 20px);">
         <div class="max-w-md mx-auto">
             <button onclick="goToAuth()" class="mb-4 px-4 py-2 bg-slate-100 rounded-full text-xs font-bold text-slate-500">⬅ Back</button>
@@ -156,6 +158,8 @@
         </div>
     </div>
 
+    <!-- 3. MAIN APP -->
+    <!-- 🟢 修复: 默认 hidden，防止导航栏偷跑 -->
     <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
@@ -177,6 +181,7 @@
         </header>
 
         <div class="flex-1 overflow-hidden relative w-full px-4">
+            <!-- TAB 1: WALLET -->
             <main id="tab-wallet" class="tab-content active">
                 <div class="grid grid-cols-3 gap-2 mb-6">
                     <div class="bg-indigo-500 p-3 rounded-2xl text-white text-center shadow-lg shadow-indigo-200"><div class="text-[9px] font-bold uppercase opacity-80">Spend</div><div id="bal-spend" class="text-lg font-black mt-1">$0</div></div>
@@ -216,6 +221,7 @@
                 <div id="history-list" class="space-y-2 pb-8"></div>
             </main>
 
+            <!-- TAB 2: GOALS -->
             <main id="tab-goals" class="tab-content">
                 <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-6 flex justify-between items-center">
                     <div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Saved</div><div id="goal-header-bal" class="text-4xl font-black text-amber-500">$0.00</div></div>
@@ -225,6 +231,7 @@
                 <div id="goals-list" class="space-y-4"></div>
             </main>
 
+            <!-- TAB 3: REPORT -->
             <main id="tab-review" class="tab-content">
                 <h3 class="text-xl font-black text-slate-800 mb-4">Spending Report</h3>
                 <div class="grid grid-cols-2 gap-3 mb-6"><div class="bg-white p-4 rounded-3xl border border-slate-100 text-center shadow-sm"><div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Inflow</div><div id="dash-income" class="text-lg font-black text-emerald-600 mt-1">$0.00</div></div><div class="bg-white p-4 rounded-3xl border border-slate-100 text-center shadow-sm"><div class="text-[9px] font-black text-rose-500 uppercase tracking-widest">Outflow</div><div id="dash-expense" class="text-lg font-black text-rose-600 mt-1">$0.00</div></div></div>
@@ -241,12 +248,15 @@
         </div>
     </div>
 
+    <!-- NAVIGATION -->
+    <!-- 🟢 修复: 默认 hidden -->
     <nav id="bottom-nav" class="hidden flex justify-around">
         <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
     </nav>
 
+    <!-- MODALS -->
     <div id="expense-modal" class="modal">
         <div class="modal-box">
             <h2 class="text-xl font-black mb-4 text-slate-800 text-center">💸 Record Expense</h2>
@@ -279,7 +289,7 @@
         </div>
     </div>
     
-    <div id="profile-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-4 text-slate-800 text-center">Edit Profile</h2><div id="profile-edit-form"></div><button onclick="submitProfileEdit()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black mt-4 shadow-lg">Save Changes</button><button onclick="closeModal('profile-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
+    <div id="profile-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-4 text-slate-800 text-center">Edit Profile</h2><div id="profile-edit-form"></div><button id="save-profile-btn" onclick="submitProfileEdit()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black mt-4 shadow-lg">Save Changes</button><button onclick="closeModal('profile-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     
     <div id="update-admin-modal" class="modal">
         <div class="modal-box text-center">
@@ -290,14 +300,15 @@
             <label class="block text-[10px] font-bold text-slate-400 uppercase text-left mb-1 ml-1">Admin PIN</label>
             <input type="text" id="new-admin-pin" class="w-full p-4 bg-slate-50 rounded-2xl mb-1 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase">
             
-            <button onclick="submitUpdateParentProfile()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg mt-4">Save Changes</button>
+            <!-- 🟢 修复: 按钮 ID 用于 Loading -->
+            <button id="save-family-btn" onclick="submitUpdateParentProfile()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg mt-4">Save Changes</button>
             <button onclick="closeModal('update-admin-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
         </div>
     </div>
 
     <div id="delete-tx-modal" class="modal"><div class="modal-box text-center"><div class="text-6xl mb-4">🗑️</div><h2 class="text-xl font-black mb-2 text-slate-800">Delete & Refund?</h2><div class="flex gap-3"><button onclick="closeModal('delete-tx-modal')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold">Cancel</button><button id="del-confirm-btn" class="flex-1 bg-rose-500 text-white py-3 rounded-2xl font-black shadow-lg shadow-rose-200">Delete</button></div></div></div>
     <div id="pick-child-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-indigo-600">Switch to Child</h2><div id="child-pick-grid" class="grid grid-cols-2 gap-4"></div><button onclick="closeModal('pick-child-modal')" class="w-full mt-6 text-slate-400 font-bold">Cancel</button></div></div>
-    <div id="add-child-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-4 text-emerald-600">Add New Child</h2><div id="new-child-form"></div><button onclick="submitAddChild()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black mt-4 shadow-lg">Create</button><button onclick="closeModal('add-child-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
+    <div id="add-child-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-4 text-emerald-600">Add New Child</h2><div id="new-child-form"></div><button id="add-child-btn" onclick="submitAddChild()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black mt-4 shadow-lg">Create</button><button onclick="closeModal('add-child-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="admin-login-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-indigo-600">Parent Access</h2><input type="text" id="admin-pin-input" placeholder="Enter Admin PIN" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase"><button onclick="submitAdminLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Verify</button><button onclick="closeModal('admin-login-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="redeem-modal" class="modal"><div class="modal-box text-center"><div class="text-6xl mb-4">🎁</div><h2 class="text-xl font-black mb-2 text-slate-800">Redeem Goal?</h2><p id="redeem-msg" class="text-sm font-bold text-slate-500 mb-6"></p><div class="flex gap-3"><button onclick="closeModal('redeem-modal')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold">Cancel</button><button id="redeem-confirm-btn" class="flex-1 bg-emerald-500 text-white py-3 rounded-2xl font-black shadow-lg shadow-emerald-200">Yes, Buy It!</button></div></div></div>
     <div id="reward-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-emerald-600 text-center">🌟 Give Reward</h2><input type="number" id="rew-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-emerald-100 mb-6 outline-none py-2 text-emerald-600"><input type="text" id="rew-desc" placeholder="Reason (e.g. Chores)" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none font-bold"><button onclick="submitReward()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-200">Send Money</button><button onclick="closeModal('reward-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
@@ -305,7 +316,7 @@
     <div id="goal-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-slate-800">New Goal 🎯</h2><input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none"><input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none"><button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Goal</button><button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
 
     <script>
-        // ⚠️⚠️⚠️ 请替换为你的 Vercel 后端地址 ⚠️⚠️⚠️
+        // ⚠️⚠️⚠️ Vercel URL ⚠️⚠️⚠️
         const API_URL = "https://piggybank-backend.vercel.app/api"; 
 
         if ('serviceWorker' in navigator) {
@@ -356,8 +367,8 @@
 
         function showAuth() { 
             document.getElementById('global-loader').classList.add('hidden'); 
-            document.getElementById('auth-screen').classList.remove('hidden');
-            // 🔴 修复 2: 强制隐藏主应用和导航栏
+            document.getElementById('auth-screen').classList.remove('hidden'); 
+            // 🟢 修复: 确保未登录时隐藏 App 和导航
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('bottom-nav').classList.add('hidden');
         }
@@ -368,13 +379,11 @@
         function openModal(id) { 
             const el = document.getElementById(id); if(el) el.classList.add('open'); 
             if(id === 'expense-modal') {
-                // UI Reset
                 document.getElementById('exp-amount').value = '';
                 document.getElementById('exp-desc').value = '';
                 const btn = document.querySelector('[data-val="Other"]'); if(btn) selectCategory('Other', btn);
                 if(document.getElementById('exp-account')) document.getElementById('exp-account').value = ""; 
                 document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
-                
                 const bal = state.balances;
                 document.getElementById('bal-hint-spend').innerText = '$' + (bal.spend||0).toFixed(2);
                 document.getElementById('bal-hint-share').innerText = '$' + (bal.share||0).toFixed(2);
@@ -421,7 +430,7 @@
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('signup-screen').classList.add('hidden'); 
-            // 🔴 修复 3: 只有在数据加载成功后，才移除 hidden
+            // 🟢 修复: 数据加载成功后才显示导航栏
             document.getElementById('bottom-nav').classList.remove('hidden');
 
             state.children = d.children || [];
@@ -445,7 +454,7 @@
             setCls('btn-save-acc', isParent ? 'remove' : 'add', 'hidden');
 
             document.getElementById('display-avatar').innerText = c.avatar || '👤';
-            document.getElementById('display-name').innerText = isParent ? `Admin: ${c.name || 'Parent'}` : (c.name || 'User');
+            document.getElementById('display-name').innerText = isParent ? `Admin: ${c.name}` : c.name;
             document.getElementById('display-family').innerText = d.familyName || 'Family';
 
             document.getElementById('bal-spend').innerText = '$'+(bal.spend||0).toFixed(2);
@@ -543,7 +552,14 @@
                 state.fid = res.familyId; state.cid = res.childId; state.role = res.role;
                 await fetchDash(true);
             } catch(e) {
-                toast(e.message, 'error');
+                // 🟢 修复: 错误提示优化
+                if(e.message.includes('not found')) {
+                    toast("Account not found. Check email or Sign Up.", 'error');
+                } else if(e.message.includes('Invalid')) {
+                    toast("Wrong PIN. Please try again.", 'error');
+                } else {
+                    toast(e.message, 'error');
+                }
                 btn.disabled = false; btn.innerText = "Unlock";
             }
         }
@@ -573,7 +589,6 @@
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error');
             if (cat === 'Other' && !d) return toast("Please enter a description for 'Other'", 'error');
             
-            // 余额检查
             const balKey = ac.split(' ')[0].toLowerCase();
             const curBal = state.balances[balKey] || 0;
             if (a > curBal) return toast("Insufficient funds!", 'error');
@@ -728,9 +743,22 @@
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             if (!isValidPin(cCode)) return toast("PIN invalid", 'error');
 
+            const btn = document.getElementById('add-child-btn');
+            btn.disabled = true; btn.innerText = "Creating...";
+
             const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
-            closeModal('add-child-modal'); 
-            try { const res = await api('addChild', data); toast('Added!'); state.cid = res.newChildId; fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
+            
+            try { 
+                const res = await api('addChild', data); 
+                closeModal('add-child-modal'); 
+                toast('Added!'); 
+                state.cid = res.newChildId; 
+                fetchDash(true); 
+            } catch(e) { 
+                toast(e.message, 'error'); 
+            } finally {
+                btn.disabled = false; btn.innerText = "Create";
+            }
         }
         
         function openProfileEdit() { 
@@ -763,9 +791,21 @@
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             if (!isValidPin(cCode)) return toast("PIN invalid", 'error');
 
+            const btn = document.getElementById('save-profile-btn');
+            btn.disabled = true; btn.innerText = "Updating...";
+
             const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
-            closeModal('profile-modal'); 
-            try { await api('updateChildProfile', data); toast('Updated'); fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
+            
+            try { 
+                await api('updateChildProfile', data); 
+                closeModal('profile-modal'); 
+                toast('Updated'); 
+                fetchDash(true); 
+            } catch(e) { 
+                toast(e.message, 'error'); 
+            } finally {
+                btn.disabled = false; btn.innerText = "Save Changes";
+            }
         }
 
         async function submitReward(){ 
@@ -809,17 +849,26 @@
         async function confirmRedeem(id, amt, name) { closeModal('redeem-modal'); try { await api('redeemGoal', {id, amount:amt, name, childId: state.cid}); toast('Redeemed!'); fetchDash(false); } catch(e) { toast(e.message, 'error'); } }
         async function doReview(id,v){ try{await api('updateReview',{id,review:v});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         
+        // 🟢 修复: 按钮 Loading 状态
         async function submitUpdateParentProfile() { 
             const p = document.getElementById('new-admin-pin').value;
             const n = document.getElementById('update-fam-name').value;
             if(p && !isValidPin(p)) return toast("PIN invalid", 'error');
             if(!n) return toast("Family Name required", 'error');
             
+            const btn = document.getElementById('save-family-btn');
+            btn.disabled = true; btn.innerText = "Updating...";
+
             try { 
                 await api('updateParentPin', { newPin: p, newFamilyName: n }); 
-                toast('Updated!'); closeModal('update-admin-modal'); 
+                toast('Updated!'); 
+                closeModal('update-admin-modal'); 
                 fetchDash(true);
-            } catch(e) { toast(e.message, 'error'); } 
+            } catch(e) { 
+                toast(e.message, 'error'); 
+            } finally {
+                btn.disabled = false; btn.innerText = "Save Changes";
+            }
         }
         async function submitAdminLogin() { try { await api('verifyParentPin', { pin: document.getElementById('admin-pin-input').value }); closeModal('admin-login-modal'); state.role='Parent'; fetchDash(true); } catch(e) { toast(e.message, 'error'); } }
         function openDeleteModal(txId) { document.getElementById('del-confirm-btn').onclick = () => confirmDelete(txId); openModal('delete-tx-modal'); }
