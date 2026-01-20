@@ -18,6 +18,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
+        /* ✅ 1. 定义全局变量：iOS 标准 TabBar 高度 */
+        :root {
+            --nav-height: 56px; 
+        }
+
         body { 
             font-family: 'Fredoka', sans-serif; 
             background-color: #f8fafc; 
@@ -33,14 +38,17 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* ✅ 2. 内容区域：动态计算底部留白 */
         .tab-content { 
             display: none; 
             opacity: 0; 
             animation: fadeIn 0.2s forwards; 
             height: 100%; 
             overflow-y: auto; 
-            /* 🟢 优化 1: 减少底部留白，更紧凑 */
-            padding-bottom: calc(50px + env(safe-area-inset-bottom)); 
+            
+            /* 计算公式：导航栏高度 + 安全区 + 15px(微调后的呼吸感) */
+            padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 15px);
+            
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
@@ -50,22 +58,38 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* ✅ 3. 底部导航栏：原生 iOS 毛玻璃质感 & 完美高度 */
         #bottom-nav { 
             position: fixed; 
             bottom: 0; left: 0; right: 0; 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(20px);
-            border-top: 1px solid #e2e8f0;
-            padding-bottom: max(5px, env(safe-area-inset-bottom)); 
-            padding-top: 8px;
             z-index: 50;
-            /* display: flex; 由 Tailwind 控制 */
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
+
+            /* 背景与毛玻璃：增加饱和度更通透 */
+            background: rgba(255, 255, 255, 0.90); 
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 0.5px solid rgba(0,0,0,0.1); 
+
+            /* 高度控制核心 */
+            height: var(--nav-height); /* 内容高度固定 */
+            padding-bottom: env(safe-area-inset-bottom); /* 仅底部填充安全区 */
+            box-sizing: content-box; /* 关键：让高度不包含 padding，自动延伸背景色 */
+            
+            /* 布局 */
+            display: flex;
+            align-items: center; 
+            justify-content: space-around;
+            padding-top: 0;
+            
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
         }
 
-        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; items-center; justify-center; gap: 4px; }
+        /* 🔒 防止导航栏在登录页偷跑 (ID 优先级高，需强制隐藏) */
+        #bottom-nav.hidden { display: none !important; }
+
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; items-center; justify-center; gap: 4px; height: 100%; }
         .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
-        .nav-indicator { height: 4px; width: 24px; background: #4f46e5; border-radius: 99px; margin-top: 4px; transition: opacity 0.2s; opacity: 0; }
+        .nav-indicator { height: 4px; width: 24px; background: #4f46e5; border-radius: 99px; margin-top: 2px; transition: opacity 0.2s; opacity: 0; }
         .nav-btn.active .nav-indicator { opacity: 1; }
 
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
@@ -156,6 +180,7 @@
     </div>
 
     <!-- 3. MAIN APP -->
+    <!-- 默认 hidden -->
     <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
@@ -245,7 +270,7 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav id="bottom-nav" class="hidden flex items-center justify-around">
+    <nav id="bottom-nav" class="hidden">
         <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
@@ -306,37 +331,7 @@
     <div id="admin-login-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-indigo-600">Parent Access</h2><input type="text" id="admin-pin-input" placeholder="Enter Admin PIN" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase"><button onclick="submitAdminLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Verify</button><button onclick="closeModal('admin-login-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="redeem-modal" class="modal"><div class="modal-box text-center"><div class="text-6xl mb-4">🎁</div><h2 class="text-xl font-black mb-2 text-slate-800">Redeem Goal?</h2><p id="redeem-msg" class="text-sm font-bold text-slate-500 mb-6"></p><div class="flex gap-3"><button onclick="closeModal('redeem-modal')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold">Cancel</button><button id="redeem-confirm-btn" class="flex-1 bg-emerald-500 text-white py-3 rounded-2xl font-black shadow-lg shadow-emerald-200">Yes, Buy It!</button></div></div></div>
     <div id="reward-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-emerald-600 text-center">🌟 Give Reward</h2><input type="number" id="rew-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-emerald-100 mb-6 outline-none py-2 text-emerald-600"><input type="text" id="rew-desc" placeholder="Reason (e.g. Chores)" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none font-bold"><button onclick="submitReward()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-200">Send Money</button><button onclick="closeModal('reward-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
-    
-    <!-- 🟢 修复 2: 优化转账 Modal (显示余额) -->
-    <div id="transfer-modal" class="modal">
-        <div class="modal-box">
-            <h2 class="text-xl font-black mb-6 text-indigo-600 text-center">Move Money</h2>
-            <input type="number" id="trans-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-slate-100 mb-6 outline-none py-2">
-            
-            <div class="flex flex-col gap-2 mb-6">
-                <!-- 增加余额显示 Span -->
-                <div class="flex justify-between px-1"><span class="text-[10px] font-bold text-slate-400 uppercase">From</span><span id="trans-from-bal" class="text-[10px] font-black text-rose-500"></span></div>
-                <select id="trans-from" onchange="updateTransferUI()" class="p-3 bg-rose-50 rounded-xl font-bold text-rose-500 outline-none">
-                    <option value="Spend Acc">Spend Acc</option>
-                    <option value="Save Acc">Save Acc</option>
-                    <option value="Share Acc">Share Acc</option>
-                </select>
-                
-                <div class="text-center text-slate-300">⬇</div>
-                
-                <div class="flex justify-between px-1"><span class="text-[10px] font-bold text-slate-400 uppercase">To</span><span id="trans-to-bal" class="text-[10px] font-black text-emerald-500"></span></div>
-                <select id="trans-to" onchange="updateTransferUI()" class="p-3 bg-emerald-50 rounded-xl font-bold text-emerald-500 outline-none">
-                    <option value="Spend Acc">Spend Acc</option>
-                    <option value="Save Acc">Save Acc</option>
-                    <option value="Share Acc">Share Acc</option>
-                </select>
-            </div>
-            
-            <button onclick="submitTransfer()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg">Execute</button>
-            <button onclick="closeModal('transfer-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
-        </div>
-    </div>
-
+    <div id="transfer-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-indigo-600 text-center">Move Money</h2><input type="number" id="trans-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-slate-100 mb-6 outline-none py-2"><div class="flex flex-col gap-2 mb-6"><select id="trans-from" onchange="updateTransferOptions()" class="p-3 bg-rose-50 rounded-xl font-bold text-rose-500 outline-none"><option value="Spend Acc">From Spend</option><option value="Save Acc">From Save</option><option value="Share Acc">From Share</option></select><div class="text-center text-slate-300">⬇</div><select id="trans-to" class="p-3 bg-emerald-50 rounded-xl font-bold text-emerald-500 outline-none"><option value="Spend Acc">To Spend</option><option value="Save Acc">To Save</option><option value="Share Acc">To Share</option></select></div><button onclick="submitTransfer()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg">Execute</button><button onclick="closeModal('transfer-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="goal-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-slate-800">New Goal 🎯</h2><input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none"><input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none"><button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Goal</button><button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
 
     <script>
@@ -393,7 +388,7 @@
             document.getElementById('global-loader').classList.add('hidden'); 
             document.getElementById('auth-screen').classList.remove('hidden'); 
             document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('bottom-nav').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.add('hidden'); // Ensure CSS hidden class works
         }
         function showLoader(msg="Loading...") { const l = document.getElementById('global-loader'); const m = document.getElementById('loader-msg'); if(l && m) { m.innerText = msg; l.classList.remove('hidden'); } }
         function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
@@ -413,10 +408,9 @@
                 document.getElementById('bal-hint-save').innerText = '$' + (bal.save||0).toFixed(2);
             }
             if(id === 'admin-login-modal') document.getElementById('admin-pin-input').value = '';
-            // 🟢 修复 2: 每次打开都初始化 UI
             if(id === 'transfer-modal') {
                 document.getElementById('trans-amount').value = '';
-                updateTransferUI();
+                updateTransferOptions();
             }
             if(id === 'reward-modal') {
                  document.getElementById('rew-amount').value = '';
@@ -454,6 +448,7 @@
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('signup-screen').classList.add('hidden'); 
+            // 🟢 Explicitly remove hidden class
             document.getElementById('bottom-nav').classList.remove('hidden');
 
             state.children = d.children || [];
@@ -710,7 +705,6 @@
                 const h = parseInt(r.querySelector('.c-r-share').value) || 0;
                 const amt = parseFloat(r.querySelector('.c-amt').value) || 0;
 
-                // 🟢 修复 3: 校验名字
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`Conflict: Child ${cName} PIN same as Parent.`, 'error');
                 if(!isValidPin(cCode)) return toast(`Child ${cName} PIN invalid (4+ chars)`, 'error');
