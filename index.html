@@ -37,17 +37,20 @@
         .tab-content { 
             display: none; 
             opacity: 0; 
-            animation: fadeIn 0.2s forwards; 
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更丝滑的进入动画 */
             height: 100%; 
             overflow-y: auto; 
             
-            /* 导航栏高度(64) + 底部间距(20) + 安全区 + 额外呼吸感(20) = ~100px */
-            padding-bottom: calc(65px + env(safe-area-inset-bottom));
+            /* 🧮 计算公式：
+               导航栏高度(70px) + 悬浮距离(20px) + 安全区 + 50px(额外余量) 
+               = 约 140px
+            */
+            padding-bottom: calc(140px + env(safe-area-inset-bottom));
             
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
-        } 
+        }
         .tab-content::-webkit-scrollbar { display: none; }
 
         .tab-content.active { display: block; }
@@ -56,76 +59,74 @@
         /* ✅ 核心修改：浮动导航栏 (Floating Island) */
         #bottom-nav { 
             position: fixed; 
-            /* 底部距离：留出安全区 + 20px 悬浮感 */
+            /* 悬浮高度 */
             bottom: calc(20px + env(safe-area-inset-bottom)); 
             
-            /* 居中定位 */
+            /* 居中 & 宽度对齐顶部 (左右各留 16px) */
             left: 50%;
             transform: translateX(-50%);
-            
-            /* 📏 宽度对齐：左右各留 16px，与顶部 Header 的 Padding 对齐 */
             width: calc(100% - 32px);
-            max-width: 440px; /* 限制最大宽度，防止在 iPad 上太宽 */
-            height: 70px; /* 稍微加高，增加点击舒适度 */
+            max-width: 440px;
             
-            /* 💎 质感核心：高通透毛玻璃 */
-            background: rgba(255, 255, 255, 0.75); /* 更透明 */
-            backdrop-filter: blur(25px) saturate(200%); /* 强模糊 + 色彩增益 */
-            -webkit-backdrop-filter: blur(25px) saturate(200%);
+            height: 72px; /* 饱满的高度 */
             
-            /* 形状 */
-            border-radius: 35px; /* 全圆角胶囊状 */
+            /* 🍎 iOS 原生级毛玻璃配方 */
+            /* 背景更透 (0.75)，模糊度极高 (30px)，饱和度拉高 (180%) */
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
             
-            /* 🎨 边框与阴影：增加层次感 */
-            /* 1px 半透明白边框，模拟玻璃边缘反光 */
-            border: 1px solid rgba(255, 255, 255, 0.6); 
-            /* 复合阴影：一层深色投影 + 一层内部高光 */
+            /* 形状与阴影 */
+            border-radius: 40px; /* 完美的跑道圆角 */
+            border: 1px solid rgba(255, 255, 255, 0.5); /* 玻璃边缘反光 */
+            
+            /* 复合阴影：让它真的“浮”起来 */
             box-shadow: 
-                0 20px 40px -10px rgba(0, 0, 0, 0.12), /* 外部投影 */
-                inset 0 1px 0 rgba(255, 255, 255, 0.8); /* 顶部内高光 */
+                0 10px 40px -10px rgba(0, 0, 0, 0.1), /* 大范围柔光 */
+                0 4px 10px -2px rgba(0, 0, 0, 0.05), /* 近距离投影 */
+                inset 0 1px 0 rgba(255, 255, 255, 0.6); /* 顶部高光 */
             
             z-index: 50;
             display: flex;
             align-items: center; 
-            justify-content: space-evenly; /* 图标分布更均匀 */
-            padding: 0 10px;
+            justify-content: space-evenly;
+            padding: 0 8px;
         }
 
         /* 强制隐藏 */
         #bottom-nav.hidden { display: none !important; }
 
-        /* 按钮样式微调 */
+        /* 按钮交互 */
         .nav-btn { 
             color: #94a3b8; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* 弹性过渡 */
             flex: 1; 
             display: flex; 
             flex-direction: column; 
             items-center; 
             justify-content: center; 
-            gap: 4px; 
+            gap: 5px; 
             height: 100%; 
-            border-radius: 20px; 
+            border-radius: 24px; 
         }
         
-        /* 选中状态：更明显的颜色变化和位移 */
+        /* 选中状态 */
         .nav-btn.active { 
             color: #4f46e5; 
-            text-shadow: 0 0 20px rgba(79, 70, 229, 0.3); /* 文字微发光 */
-            transform: translateY(-2px); 
+            /* 选中时，文字带一点点垂直位移 */
+            transform: translateY(-1px);
         }
         
-        /* 指示器：小圆点 */
+        /* 指示器：选中时才出现的小横条，改为圆点更精致 */
         .nav-indicator { 
             height: 5px; 
             width: 5px; 
             background: #4f46e5; 
             border-radius: 50%; 
-            margin-top: 2px; 
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* 弹性动画 */
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 果冻弹跳效果 */
             opacity: 0; 
             transform: scale(0); 
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.4);
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.5); /* 小光晕 */
         }
         .nav-btn.active .nav-indicator { opacity: 1; transform: scale(1); }
         
