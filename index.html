@@ -34,21 +34,22 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .tab-content { 
-    display: none; 
-    opacity: 0; 
-    animation: fadeIn 0.2s forwards; 
-    height: 100%; 
-    overflow-y: auto; 
-    /* 修改点：改为动态计算，刚好避开导航栏即可 (60px + 安全区) */
-    padding-bottom: calc(60px + env(safe-area-inset-bottom)); 
-    -webkit-overflow-scrolling: touch; 
-}
+            display: none; 
+            opacity: 0; 
+            animation: fadeIn 0.2s forwards; 
+            height: 100%; 
+            overflow-y: auto; 
+            /* 🟢 优化 1: 减少底部留白，更紧凑 */
+            padding-bottom: calc(80px + env(safe-area-inset-bottom)); 
+            -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+        } 
         .tab-content::-webkit-scrollbar { display: none; }
 
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 🟢 修复: 移除 display: flex，由 Tailwind 类控制 */
         #bottom-nav { 
             position: fixed; 
             bottom: 0; left: 0; right: 0; 
@@ -58,8 +59,7 @@
             padding-bottom: max(10px, env(safe-area-inset-bottom)); 
             padding-top: 10px;
             z-index: 50;
-            /* display: flex;  <-- 删除这行，防止优先级覆盖 hidden */
-            /* align-items: center; <-- 删除这行 */
+            /* display: flex; 由 Tailwind 控制 */
             box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
         }
 
@@ -156,7 +156,6 @@
     </div>
 
     <!-- 3. MAIN APP -->
-    <!-- 🟢 修复: 默认 hidden -->
     <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
@@ -246,7 +245,6 @@
     </div>
 
     <!-- NAVIGATION -->
-    <!-- 🟢 修复: 在 class 中添加 flex items-center，但保留 hidden 作为初始状态 -->
     <nav id="bottom-nav" class="hidden flex items-center justify-around">
         <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
@@ -308,7 +306,37 @@
     <div id="admin-login-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-indigo-600">Parent Access</h2><input type="text" id="admin-pin-input" placeholder="Enter Admin PIN" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 font-black text-center text-xl tracking-widest outline-none border border-slate-200 uppercase"><button onclick="submitAdminLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Verify</button><button onclick="closeModal('admin-login-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
     <div id="redeem-modal" class="modal"><div class="modal-box text-center"><div class="text-6xl mb-4">🎁</div><h2 class="text-xl font-black mb-2 text-slate-800">Redeem Goal?</h2><p id="redeem-msg" class="text-sm font-bold text-slate-500 mb-6"></p><div class="flex gap-3"><button onclick="closeModal('redeem-modal')" class="flex-1 bg-slate-100 text-slate-400 py-3 rounded-2xl font-bold">Cancel</button><button id="redeem-confirm-btn" class="flex-1 bg-emerald-500 text-white py-3 rounded-2xl font-black shadow-lg shadow-emerald-200">Yes, Buy It!</button></div></div></div>
     <div id="reward-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-emerald-600 text-center">🌟 Give Reward</h2><input type="number" id="rew-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-emerald-100 mb-6 outline-none py-2 text-emerald-600"><input type="text" id="rew-desc" placeholder="Reason (e.g. Chores)" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none font-bold"><button onclick="submitReward()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-200">Send Money</button><button onclick="closeModal('reward-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
-    <div id="transfer-modal" class="modal"><div class="modal-box"><h2 class="text-xl font-black mb-6 text-indigo-600 text-center">Move Money</h2><input type="number" id="trans-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-slate-100 mb-6 outline-none py-2"><div class="flex flex-col gap-2 mb-6"><select id="trans-from" onchange="updateTransferOptions()" class="p-3 bg-rose-50 rounded-xl font-bold text-rose-500 outline-none"><option value="Spend Acc">From Spend</option><option value="Save Acc">From Save</option><option value="Share Acc">From Share</option></select><div class="text-center text-slate-300">⬇</div><select id="trans-to" class="p-3 bg-emerald-50 rounded-xl font-bold text-emerald-500 outline-none"><option value="Spend Acc">To Spend</option><option value="Save Acc">To Save</option><option value="Share Acc">To Share</option></select></div><button onclick="submitTransfer()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg">Execute</button><button onclick="closeModal('transfer-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
+    
+    <!-- 🟢 修复 2: 优化转账 Modal (显示余额) -->
+    <div id="transfer-modal" class="modal">
+        <div class="modal-box">
+            <h2 class="text-xl font-black mb-6 text-indigo-600 text-center">Move Money</h2>
+            <input type="number" id="trans-amount" placeholder="0.00" class="w-full text-4xl font-black text-center border-b-2 border-slate-100 mb-6 outline-none py-2">
+            
+            <div class="flex flex-col gap-2 mb-6">
+                <!-- 增加余额显示 Span -->
+                <div class="flex justify-between px-1"><span class="text-[10px] font-bold text-slate-400 uppercase">From</span><span id="trans-from-bal" class="text-[10px] font-black text-rose-500"></span></div>
+                <select id="trans-from" onchange="updateTransferUI()" class="p-3 bg-rose-50 rounded-xl font-bold text-rose-500 outline-none">
+                    <option value="Spend Acc">Spend Acc</option>
+                    <option value="Save Acc">Save Acc</option>
+                    <option value="Share Acc">Share Acc</option>
+                </select>
+                
+                <div class="text-center text-slate-300">⬇</div>
+                
+                <div class="flex justify-between px-1"><span class="text-[10px] font-bold text-slate-400 uppercase">To</span><span id="trans-to-bal" class="text-[10px] font-black text-emerald-500"></span></div>
+                <select id="trans-to" onchange="updateTransferUI()" class="p-3 bg-emerald-50 rounded-xl font-bold text-emerald-500 outline-none">
+                    <option value="Spend Acc">Spend Acc</option>
+                    <option value="Save Acc">Save Acc</option>
+                    <option value="Share Acc">Share Acc</option>
+                </select>
+            </div>
+            
+            <button onclick="submitTransfer()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black shadow-lg">Execute</button>
+            <button onclick="closeModal('transfer-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
+        </div>
+    </div>
+
     <div id="goal-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-slate-800">New Goal 🎯</h2><input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none"><input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none"><button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Goal</button><button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
 
     <script>
@@ -364,7 +392,6 @@
         function showAuth() { 
             document.getElementById('global-loader').classList.add('hidden'); 
             document.getElementById('auth-screen').classList.remove('hidden'); 
-            // 🟢 修复: 确保未登录时隐藏 App 和导航
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('bottom-nav').classList.add('hidden');
         }
@@ -386,9 +413,10 @@
                 document.getElementById('bal-hint-save').innerText = '$' + (bal.save||0).toFixed(2);
             }
             if(id === 'admin-login-modal') document.getElementById('admin-pin-input').value = '';
+            // 🟢 修复 2: 每次打开都初始化 UI
             if(id === 'transfer-modal') {
                 document.getElementById('trans-amount').value = '';
-                updateTransferOptions();
+                updateTransferUI();
             }
             if(id === 'reward-modal') {
                  document.getElementById('rew-amount').value = '';
@@ -426,7 +454,6 @@
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('signup-screen').classList.add('hidden'); 
-            // 🟢 修复: 数据加载成功后才显示导航栏
             document.getElementById('bottom-nav').classList.remove('hidden');
 
             state.children = d.children || [];
@@ -548,7 +575,6 @@
                 state.fid = res.familyId; state.cid = res.childId; state.role = res.role;
                 await fetchDash(true);
             } catch(e) {
-                // 🟢 修复: 错误提示优化
                 if(e.message.includes('not found')) {
                     toast("Account not found. Check email or Sign Up.", 'error');
                 } else if(e.message.includes('Invalid')) {
@@ -684,6 +710,7 @@
                 const h = parseInt(r.querySelector('.c-r-share').value) || 0;
                 const amt = parseFloat(r.querySelector('.c-amt').value) || 0;
 
+                // 🟢 修复 3: 校验名字
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`Conflict: Child ${cName} PIN same as Parent.`, 'error');
                 if(!isValidPin(cCode)) return toast(`Child ${cName} PIN invalid (4+ chars)`, 'error');
@@ -735,6 +762,10 @@
             const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
             const cCode = form.querySelector('.c-code').value.trim().toUpperCase();
             
+            // 🟢 修复 3: 校验名字
+            const name = form.querySelector('.c-name').value.trim();
+            if (!name) return toast("Child Name is required!", 'error');
+
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             if (!isValidPin(cCode)) return toast("PIN invalid", 'error');
@@ -742,7 +773,7 @@
             const btn = document.getElementById('add-child-btn');
             btn.disabled = true; btn.innerText = "Creating...";
 
-            const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
+            const data = { name: name, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             
             try { 
                 const res = await api('addChild', data); 
@@ -783,6 +814,10 @@
             const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
             const cCode = form.querySelector('.c-code').value.trim().toUpperCase();
 
+            // 🟢 修复 3: 校验名字
+            const name = form.querySelector('.c-name').value.trim();
+            if (!name) return toast("Child Name is required!", 'error');
+
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             if (!isValidPin(cCode)) return toast("PIN invalid", 'error');
@@ -790,7 +825,7 @@
             const btn = document.getElementById('save-profile-btn');
             btn.disabled = true; btn.innerText = "Updating...";
 
-            const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
+            const data = { childId: state.cid, name: name, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             
             try { 
                 await api('updateChildProfile', data); 
@@ -823,16 +858,38 @@
             try{await api('addReward',{amount:a,description:d}); fetchDash(false);}catch(e){toast(e.message,'error');} 
         }
         
-        function updateTransferOptions() {
-            const fromVal = document.getElementById('trans-from').value;
-            const toSelect = document.getElementById('trans-to');
-            Array.from(toSelect.options).forEach(opt => {
-                opt.disabled = (opt.value === fromVal);
-                if (opt.value === fromVal && toSelect.value === fromVal) {
-                    toSelect.value = (fromVal === 'Spend Acc' ? 'Save Acc' : 'Spend Acc');
+        // 🟢 修复 2: 动态更新逻辑
+        function updateTransferUI() {
+            const from = document.getElementById('trans-from');
+            const to = document.getElementById('trans-to');
+            const fromVal = from.value;
+            const bal = state.balances; 
+
+            // 更新 From 余额
+            const fromKey = fromVal.split(' ')[0].toLowerCase();
+            document.getElementById('trans-from-bal').innerText = `($${(bal[fromKey]||0).toFixed(2)})`;
+
+            // 过滤 To 选项 (隐藏已选的 From)
+            let firstVisible = null;
+            Array.from(to.options).forEach(opt => {
+                if (opt.value === fromVal) {
+                    opt.style.display = 'none';
+                } else {
+                    opt.style.display = 'block';
+                    if(!firstVisible) firstVisible = opt.value;
                 }
             });
+
+            // 如果当前选中的被隐藏了，自动切到第一个可用的
+            if (to.value === fromVal || to.style.display === 'none') {
+                to.value = firstVisible;
+            }
+
+            // 更新 To 余额
+            const toKey = to.value.split(' ')[0].toLowerCase();
+            document.getElementById('trans-to-bal').innerText = `($${(bal[toKey]||0).toFixed(2)})`;
         }
+
         async function submitTransfer(){ 
             const a=parseFloat(document.getElementById('trans-amount').value),f=document.getElementById('trans-from').value,t=document.getElementById('trans-to').value; 
             if (a > 100000) return toast("Amount too high", 'error'); 
@@ -845,7 +902,6 @@
         async function confirmRedeem(id, amt, name) { closeModal('redeem-modal'); try { await api('redeemGoal', {id, amount:amt, name, childId: state.cid}); toast('Redeemed!'); fetchDash(false); } catch(e) { toast(e.message, 'error'); } }
         async function doReview(id,v){ try{await api('updateReview',{id,review:v});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         
-        // 🟢 修复: 按钮 Loading 状态
         async function submitUpdateParentProfile() { 
             const p = document.getElementById('new-admin-pin').value;
             const n = document.getElementById('update-fam-name').value;
