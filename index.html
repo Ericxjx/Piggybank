@@ -39,7 +39,8 @@
             animation: fadeIn 0.2s forwards; 
             height: 100%; 
             overflow-y: auto; 
-            padding-bottom: 100px; /* 增加底部留白，防止被导航栏遮挡 */
+            /* 🔴 修改 1: 减少底部留白，使用 calc 动态计算，刚好盖过导航栏即可 */
+            padding-bottom: calc(65px + env(safe-area-inset-bottom)); 
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
@@ -49,25 +50,25 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 🔴 修复: 微信风格底部导航栏 */
         #bottom-nav { 
             position: fixed; 
             bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.98); 
             backdrop-filter: blur(20px);
-            border-top: 1px solid #e2e8f0;
-            padding-bottom: env(safe-area-inset-bottom); /* 背景色延伸到安全区 */
-            height: calc(60px + env(safe-area-inset-bottom)); /* 固定高度 + 安全区 */
+            border-top: 1px solid #f1f5f9; /* 颜色变淡一点 */
+            padding-bottom: env(safe-area-inset-bottom); 
+            height: calc(56px + env(safe-area-inset-bottom)); /* 稍微调低高度 */
             z-index: 50;
             display: flex;
-            align-items: flex-start; /* 图标靠上对齐 */
-            padding-top: 8px; /* 顶部内边距 */
+            align-items: center; /* 修复 CSS 语法 */
+            padding-top: 4px; 
             box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
         }
 
-        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; items-center; justify-center; }
+        /* 修复 CSS 语法: items-center 不是标准CSS，改为 align-items */
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
-        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 4px auto 0; transition: width 0.2s; }
+        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 2px auto 0; transition: width 0.2s; }
         .nav-btn.active .nav-indicator { width: 24px; }
 
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
@@ -114,7 +115,6 @@
         <div id="loader-msg" class="text-sm font-bold text-slate-500">Starting...</div>
     </div>
 
-    <!-- 1. AUTH SCREEN -->
     <div id="auth-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-50 overflow-y-auto hidden">
         <div class="text-center mb-10 text-indigo-600"><div class="text-7xl mb-4">🐷</div><h1 class="text-4xl font-black">PiggyBank</h1></div>
         <div class="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-xl">
@@ -125,7 +125,6 @@
         </div>
     </div>
 
-    <!-- 2. SIGNUP WIZARD -->
     <div id="signup-screen" class="fixed inset-0 z-50 bg-white p-6 overflow-y-auto hidden no-scrollbar" style="padding-top: calc(env(safe-area-inset-top) + 20px);">
         <div class="max-w-md mx-auto">
             <button onclick="goToAuth()" class="mb-4 px-4 py-2 bg-slate-100 rounded-full text-xs font-bold text-slate-500">⬅ Back</button>
@@ -157,7 +156,6 @@
         </div>
     </div>
 
-    <!-- 3. MAIN APP -->
     <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
@@ -179,7 +177,6 @@
         </header>
 
         <div class="flex-1 overflow-hidden relative w-full px-4">
-            <!-- TAB 1: WALLET -->
             <main id="tab-wallet" class="tab-content active">
                 <div class="grid grid-cols-3 gap-2 mb-6">
                     <div class="bg-indigo-500 p-3 rounded-2xl text-white text-center shadow-lg shadow-indigo-200"><div class="text-[9px] font-bold uppercase opacity-80">Spend</div><div id="bal-spend" class="text-lg font-black mt-1">$0</div></div>
@@ -219,7 +216,6 @@
                 <div id="history-list" class="space-y-2 pb-8"></div>
             </main>
 
-            <!-- TAB 2: GOALS -->
             <main id="tab-goals" class="tab-content">
                 <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-6 flex justify-between items-center">
                     <div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Saved</div><div id="goal-header-bal" class="text-4xl font-black text-amber-500">$0.00</div></div>
@@ -229,7 +225,6 @@
                 <div id="goals-list" class="space-y-4"></div>
             </main>
 
-            <!-- TAB 3: REPORT -->
             <main id="tab-review" class="tab-content">
                 <h3 class="text-xl font-black text-slate-800 mb-4">Spending Report</h3>
                 <div class="grid grid-cols-2 gap-3 mb-6"><div class="bg-white p-4 rounded-3xl border border-slate-100 text-center shadow-sm"><div class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Inflow</div><div id="dash-income" class="text-lg font-black text-emerald-600 mt-1">$0.00</div></div><div class="bg-white p-4 rounded-3xl border border-slate-100 text-center shadow-sm"><div class="text-[9px] font-black text-rose-500 uppercase tracking-widest">Outflow</div><div id="dash-expense" class="text-lg font-black text-rose-600 mt-1">$0.00</div></div></div>
@@ -246,14 +241,12 @@
         </div>
     </div>
 
-    <!-- NAVIGATION -->
     <nav id="bottom-nav" class="hidden flex justify-around">
         <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
     </nav>
 
-    <!-- MODALS -->
     <div id="expense-modal" class="modal">
         <div class="modal-box">
             <h2 class="text-xl font-black mb-4 text-slate-800 text-center">💸 Record Expense</h2>
@@ -361,7 +354,13 @@
             } else { showAuth(); }
         }
 
-        function showAuth() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
+        function showAuth() { 
+            document.getElementById('global-loader').classList.add('hidden'); 
+            document.getElementById('auth-screen').classList.remove('hidden');
+            // 🔴 修复 2: 强制隐藏主应用和导航栏
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.add('hidden');
+        }
         function showLoader(msg="Loading...") { const l = document.getElementById('global-loader'); const m = document.getElementById('loader-msg'); if(l && m) { m.innerText = msg; l.classList.remove('hidden'); } }
         function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -413,17 +412,16 @@
                 localStorage.setItem('pb_cache', JSON.stringify({ fid:state.fid, cid:state.cid, role:state.role, data: d }));
             } catch(e) {
                 console.error("Sync failed", e);
-                // 🔴 修复：如果加载失败（且无本地缓存），显示登录页
                 if(!state.fid) showAuth();
             } finally { if(showLoader) document.body.classList.remove('loading'); }
         }
 
         function renderDash(d) {
             if(!d) return;
-            // 🔴 修复：确保容器显示
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('signup-screen').classList.add('hidden'); 
+            // 🔴 修复 3: 只有在数据加载成功后，才移除 hidden
             document.getElementById('bottom-nav').classList.remove('hidden');
 
             state.children = d.children || [];
@@ -433,7 +431,6 @@
             state.currentChildObj = c;
             state.parentPin = d.parentPin; 
             
-            // 🔴 修复：默认值保护，防止白屏
             const bal = c.balances || {spend:0, save:0, share:0};
             state.balances = bal;
             state.transactions = d.transactions || [];
