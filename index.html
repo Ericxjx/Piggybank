@@ -18,7 +18,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
-        /* 优化 1: 移除多余留白，紧贴安全区域 */
         body { 
             font-family: 'Fredoka', sans-serif; 
             background-color: #f8fafc; 
@@ -28,7 +27,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden; 
-            /* 仅保留设备安全距离，不多加像素 */
             padding-top: env(safe-area-inset-top); 
         }
 
@@ -36,10 +34,8 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 优化 1: 底部导航紧贴 */
         #bottom-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
-            /* 移除额外 padding，仅保留安全区 */
             padding-bottom: env(safe-area-inset-bottom); 
             padding-top: 10px; z-index: 50;
             background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px);
@@ -99,7 +95,8 @@
             <input type="text" id="login-code" placeholder="PIN CODE" class="w-full p-4 bg-slate-100 rounded-2xl text-center text-2xl font-black tracking-widest outline-none mb-3 uppercase focus:ring-2 ring-indigo-500 transition-all">
             <input type="email" id="login-email" placeholder="Email" class="w-full p-4 bg-slate-100 rounded-2xl text-center font-bold outline-none mb-6 focus:ring-2 ring-indigo-500 transition-all">
             <button id="login-btn" onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50">Unlock</button>
-            <button onclick="goToSignup()" class="w-full mt-4 text-indigo-500 font-bold text-sm">Create New Family ✨</button>
+            <!-- 优化 4: 显著的 Create Family 按钮 -->
+            <button onclick="goToSignup()" class="w-full mt-4 bg-indigo-50 text-indigo-600 py-3 rounded-xl font-black text-sm active:bg-indigo-100">✨ Create New Family ✨</button>
         </div>
     </div>
 
@@ -121,6 +118,7 @@
             </div>
             <div id="step-2" class="hidden animate-in slide-in-from-right duration-300">
                 <h2 class="text-2xl font-black text-indigo-600 mb-2">Setup Profile</h2>
+                <p class="text-xs text-rose-500 mb-4 font-bold bg-rose-50 p-2 rounded-lg">Rule: PIN must start with a Letter + 3 digits/letters (e.g. P123, Alex)</p>
                 <div class="space-y-6">
                     <div class="bg-indigo-50 p-5 rounded-[2rem] border border-indigo-100">
                         <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-2">Parent Admin PIN</label>
@@ -128,7 +126,6 @@
                     </div>
                     <div id="children-list" class="space-y-4"></div>
                     <button onclick="addChildRow('children-list')" class="w-full py-3 border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-2xl">+ Add Child</button>
-                    <!-- 优化 4: 增加 ID 用于防抖 -->
                     <button id="reg-btn" onclick="registerFamily()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl mt-4">Finish Setup 🎉</button>
                 </div>
             </div>
@@ -136,7 +133,6 @@
     </div>
 
     <!-- 3. MAIN APP -->
-    <!-- 优化 1: 增加内部 padding-top，不用 margin -->
     <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden pt-3">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
@@ -279,7 +275,7 @@
 
     <script>
         // ⚠️⚠️⚠️ 请在此填入你的 GAS Web App URL ⚠️⚠️⚠️
-        const API_URL = "https://script.google.com/macros/s/AKfycbwUKba8vTnHTKojrRJqMbmFLR-_Fbr0mC6nOpYW6nq9RiiWLiLcKt_FwLZV7TjWEePq/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycby1d4DrvIaBZcdOdjXeendn7lSdYovqobEKP8ZQHwN35tlNWFKjT-bmdBDEfTBD8udm/exec"; 
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./service-worker.js')
@@ -302,8 +298,20 @@
             return data;
         }
 
+        // 优化 2: Validate PIN format
+        function isValidPin(pin) {
+            // Must start with Letter, 3+ alphanumerics. Total length >= 4
+            const p = pin.toUpperCase().trim();
+            return /^[A-Z][A-Z0-9]{3,}$/.test(p);
+        }
+
         function init() {
             const cached = localStorage.getItem('pb_cache');
+            
+            // 优化 3: Auto-fill email
+            const savedEmail = localStorage.getItem('saved_email');
+            if (savedEmail) document.getElementById('login-email').value = savedEmail;
+
             if (cached) {
                 try {
                     const d = JSON.parse(cached);
@@ -441,10 +449,7 @@
             const unreviewed = state.transactions.filter(x => x.type.toLowerCase() === 'expense' && !x.review && parseFloat(x.amount) < 0);
             const revList = document.getElementById('review-list');
             if(revList) {
-                revList.innerHTML = unreviewed.length ? unreviewed.map(t => {
-                    // Unique ID for optimistic removal
-                    return `<div id="rev-${t.id}" class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50"><div><div class="font-bold text-sm text-slate-800">${t.desc}</div><div class="text-[10px] text-rose-500 font-bold">$${Math.abs(t.amount).toFixed(2)}</div></div><div class="flex gap-2"><button onclick="doReview('${t.id}', '👍')" class="p-2 bg-emerald-50 rounded-xl text-lg">👍</button><button onclick="doReview('${t.id}', '👎')" class="p-2 bg-rose-50 rounded-xl text-lg">👎</button></div></div>`
-                }).join('') : `<div class="text-center py-8"><div class="text-4xl mb-2">✨</div><div class="text-slate-300 text-xs font-bold uppercase tracking-widest">All Clean!</div></div>`;
+                revList.innerHTML = unreviewed.length ? unreviewed.map(t => `<div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50"><div><div class="font-bold text-sm text-slate-800">${t.desc}</div><div class="text-[10px] text-rose-500 font-bold">$${Math.abs(t.amount).toFixed(2)}</div></div><div class="flex gap-2"><button onclick="doReview('${t.id}', '👍')" class="p-2 bg-emerald-50 rounded-xl text-lg">👍</button><button onclick="doReview('${t.id}', '👎')" class="p-2 bg-rose-50 rounded-xl text-lg">👎</button></div></div>`).join('') : `<div class="text-center py-8"><div class="text-4xl mb-2">✨</div><div class="text-slate-300 text-xs font-bold uppercase tracking-widest">All Clean!</div></div>`;
             }
 
             if(isParent) {
@@ -484,6 +489,8 @@
             btn.disabled = true; btn.innerText = "Verifying...";
             try {
                 const res = await api('login', {code, email});
+                // 优化 3: Save email
+                localStorage.setItem('saved_email', email);
                 state.fid = res.familyId; state.cid = res.childId; state.role = res.role;
                 await fetchDash(true);
             } catch(e) {
@@ -495,54 +502,18 @@
         async function claimMoney() {
             const btn = document.getElementById('claim-btn');
             btn.disabled = true; btn.innerText = "Claimed! 🚀"; btn.classList.add('disabled-claim');
-            
-            // 优化 3: Optimistic - Update Streak & Earned instantly
-            const earnedEl = document.getElementById('total-claimed');
-            const streakEl = document.getElementById('claim-count');
-            // Simple parsing assuming format hasn't changed
-            let currEarned = parseFloat(earnedEl.innerText.replace(/[^\d.]/g, '')) || 0;
-            let currStreak = parseInt(streakEl.innerText.replace(/[^\d]/g, '')) || 0;
-            
             const amt = parseFloat(state.currentChildObj.weeklyAmt || 0);
             const r = state.currentChildObj.ratios || {spend:50,save:30,share:20};
-            
-            // Update Stats UI
-            earnedEl.innerText = `Earned: $${(currEarned + amt).toFixed(0)}`;
-            streakEl.innerText = `Streak: ${currStreak + 1} Wks`;
-
-            // Update Balances
-            state.balances.spend += amt * (r.spend/100); 
-            state.balances.save += amt * (r.save/100); 
-            state.balances.share += amt * (r.share/100);
+            state.balances.spend += amt * (r.spend/100); state.balances.save += amt * (r.save/100); state.balances.share += amt * (r.share/100);
             document.getElementById('bal-spend').innerText = '$'+state.balances.spend.toFixed(2);
-            
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            
             try { await api('claimAllowance', {}); fetchDash(false); } catch(e) { toast(e.message, 'error'); fetchDash(false); }
-        }
-
-        function selectCategory(c,b) { 
-            document.getElementById('exp-category').value=c; 
-            document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); 
-            b.classList.add('selected'); 
-            
-            // 优化 2: Dynamic Placeholder
-            const descInput = document.getElementById('exp-desc');
-            if (c === 'Other') {
-                descInput.placeholder = "What is it? (Required)";
-            } else {
-                descInput.placeholder = "Optional note...";
-            }
         }
 
         async function submitExpense(){ 
             const a=parseFloat(document.getElementById('exp-amount').value), d=document.getElementById('exp-desc').value, ac=document.getElementById('exp-account').value, cat=document.getElementById('exp-category').value;
             if(!a || !ac) return toast('Amount & Account required','error');
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error');
-            
-            // 优化 2: Validation
-            if (cat === 'Other' && !d.trim()) return toast('Description required for Other', 'error');
-
             closeModal('expense-modal');
             const k = ac.split(' ')[0].toLowerCase();
             state.balances[k] -= a; document.getElementById(`bal-${k}`).innerText = '$'+state.balances[k].toFixed(2);
@@ -601,6 +572,8 @@
             const name = document.getElementById('reg-family-name').value;
             const parentPin = document.getElementById('reg-parent-pin').value.trim().toUpperCase();
             if(!name) return toast('Family name required', 'error');
+            // 优化 2: Validate Parent PIN
+            if(!isValidPin(parentPin)) return toast('Parent PIN invalid. Need Letter+3digits (e.g. P888)', 'error');
             
             const rows = document.querySelectorAll('.child-row'); 
             const kids = [];
@@ -614,6 +587,8 @@
 
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`PIN Conflict: Child ${cName} cannot have same code as Parent.`, 'error');
+                // 优化 2: Validate Child PIN
+                if(!isValidPin(cCode)) return toast(`Child ${cName} PIN invalid. Need Letter+3digits (e.g. A123)`, 'error');
                 if (s + v + h !== 100) return toast(`Child ${cName}: Ratios must equal 100%`, 'error');
                 if (amt > 100000) return toast(`Child ${cName}: Amount too high (Max 100k)`, 'error'); 
 
@@ -635,6 +610,7 @@
             } 
         }
         
+        function selectCategory(c,b) { document.getElementById('exp-category').value=c; document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }
         function selectAccount(a) { document.getElementById('exp-account').value=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); document.querySelector(`[data-val="${a}"]`).classList.add('selected'); }
         function logout() { localStorage.removeItem('pb_cache'); location.reload(); }
         function handleParentChildSwitch(val) { if (val === 'ADD_NEW') { document.getElementById('new-child-form').innerHTML = ''; addChildRow('new-child-form'); openModal('add-child-modal'); document.getElementById('child-select').value = state.cid; } else { state.cid = val; fetchDash(true); } }
@@ -644,10 +620,13 @@
             const v = parseInt(form.querySelector('.c-r-save').value) || 0;
             const h = parseInt(form.querySelector('.c-r-share').value) || 0;
             const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
+            const cCode = form.querySelector('.c-code').value.trim().toUpperCase();
+            
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
+            if (!isValidPin(cCode)) return toast("PIN invalid. Need Letter+3digits", 'error');
 
-            const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
+            const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             closeModal('add-child-modal'); 
             try { const res = await api('addChild', data); toast('Added!'); state.cid = res.newChildId; fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
         }
@@ -676,10 +655,13 @@
             const v = parseInt(form.querySelector('.c-r-save').value) || 0;
             const h = parseInt(form.querySelector('.c-r-share').value) || 0;
             const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
+            const cCode = form.querySelector('.c-code').value.trim().toUpperCase();
+
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
             if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); 
+            if (!isValidPin(cCode)) return toast("PIN invalid. Need Letter+3digits", 'error');
 
-            const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
+            const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: cCode, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             closeModal('profile-modal'); 
             try { await api('updateChildProfile', data); toast('Updated'); fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
         }
@@ -687,10 +669,6 @@
             const a=parseFloat(document.getElementById('rew-amount').value), d=document.getElementById('rew-desc').value; 
             if (a > 100000) return toast("Amount too high (Max 100k)", 'error'); 
             closeModal('reward-modal'); 
-            // 优化 3: Optimistic Reward
-            state.balances['spend'] += a; // Default to Spend for visual feedback, actual logic on server
-            document.getElementById('bal-spend').innerText = '$'+state.balances.spend.toFixed(2);
-            confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
             try{await api('addReward',{amount:a,description:d});toast('Sent');fetchDash(false);}catch(e){toast(e.message,'error');} 
         }
         async function submitTransfer(){ 
@@ -699,24 +677,16 @@
             closeModal('transfer-modal'); 
             try{await api('transfer',{amount:a,from:f,to:t});toast('Done');fetchDash(false);}catch(e){toast(e.message,'error');} 
         }
-        async function submitGoal(){ 
-            const n=document.getElementById('goal-name').value,t=document.getElementById('goal-target').value; 
-            closeModal('goal-modal'); 
-            // 优化 3: Optimistic Goal Add
-            const list = document.getElementById('goals-list');
-            const tmpHtml = `<div class="bg-slate-50 p-5 rounded-3xl shadow-sm border border-slate-100 grayscale opacity-50"><div class="flex justify-between mb-2"><span class="font-bold text-slate-800">${n}</span><span class="text-sm font-bold text-indigo-600">$${t}</span></div><div class="text-xs text-slate-400">Saving...</div></div>`;
-            list.insertAdjacentHTML('afterbegin', tmpHtml);
-            try{await api('addGoal',{name:n,target:t});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} 
-        }
+        async function submitGoal(){ const n=document.getElementById('goal-name').value,t=document.getElementById('goal-target').value; closeModal('goal-modal'); try{await api('addGoal',{name:n,target:t});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         function openRedeemModal(id, amt, name) { document.getElementById('redeem-msg').innerText = `Use $${amt} from Save Jar to buy "${name}"?`; document.getElementById('redeem-confirm-btn').onclick = () => confirmRedeem(id, amt, name); openModal('redeem-modal'); }
         async function confirmRedeem(id, amt, name) { closeModal('redeem-modal'); try { await api('redeemGoal', {id, amount:amt, name}); toast('Redeemed!'); fetchDash(false); } catch(e) { toast(e.message, 'error'); } }
-        async function doReview(id,v){ 
-            // 优化 3: Optimistic Review
-            const el = document.getElementById(`rev-${id}`);
-            if(el) { el.style.opacity = '0'; setTimeout(()=>el.remove(), 200); }
-            try{await api('updateReview',{id,review:v});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} 
+        async function doReview(id,v){ try{await api('updateReview',{id,review:v});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
+        
+        async function submitUpdateParentPin() { 
+            const p = document.getElementById('new-admin-pin').value;
+            if(!isValidPin(p)) return toast("PIN invalid. Need Letter+3digits", 'error');
+            try { await api('updateParentPin', { newPin: p }); toast('Updated!'); closeModal('update-admin-modal'); } catch(e) { toast(e.message, 'error'); } 
         }
-        async function submitUpdateParentPin() { try { await api('updateParentPin', { newPin: document.getElementById('new-admin-pin').value }); toast('Updated!'); closeModal('update-admin-modal'); } catch(e) { toast(e.message, 'error'); } }
         async function submitAdminLogin() { try { await api('verifyParentPin', { pin: document.getElementById('admin-pin-input').value }); closeModal('admin-login-modal'); state.role='Parent'; fetchDash(true); } catch(e) { toast(e.message, 'error'); } }
         function openDeleteModal(txId) { document.getElementById('del-confirm-btn').onclick = () => confirmDelete(txId); openModal('delete-tx-modal'); }
         async function confirmDelete(txId) { closeModal('delete-tx-modal'); try { await api('deleteTransaction', {txId}); toast('Deleted'); fetchDash(false); } catch(e){ toast(e.message,'error'); } }
@@ -724,8 +694,13 @@
         function goToSignup() { document.getElementById('step-1').classList.remove('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('reg-email').value = ''; document.getElementById('reg-otp').value = ''; document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
         function goToAuth() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
 
+        // 优化 1: Logic - Single Child direct switch
         function handleParentExit() {
-            if (state.children && state.children.length > 0) {
+            if (state.children && state.children.length === 1) {
+                // Direct switch if only 1 child
+                switchChild(state.children[0].id);
+            } else if (state.children && state.children.length > 1) {
+                // Show modal if multiple
                 const grid = document.getElementById('child-pick-grid');
                 grid.innerHTML = state.children.map(c => `<button onclick="switchChild('${c.id}')" class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center active:scale-95 transition-transform"><span class="text-3xl mb-2">${c.avatar}</span><span class="font-bold text-slate-700 text-xs">${c.name}</span></button>`).join('');
                 openModal('pick-child-modal');
@@ -734,7 +709,12 @@
             }
         }
 
-        function switchChild(id) { state.cid = id; state.role = 'Child'; closeModal('pick-child-modal'); fetchDash(true); }
+        function switchChild(id) { 
+            state.cid = id; 
+            state.role = 'Child'; 
+            closeModal('pick-child-modal'); 
+            fetchDash(true); 
+        }
 
         init();
     </script>
