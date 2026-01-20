@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
+        /* 架构调整：Flexbox 布局 */
         body { 
             font-family: 'Fredoka', sans-serif; 
             background-color: #f8fafc; 
@@ -32,34 +33,30 @@
             padding-top: max(20px, env(safe-area-inset-top)); 
         }
 
-        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 100px; } 
+        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 100px; -webkit-overflow-scrolling: touch; } 
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
         #bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            padding-bottom: max(15px, env(safe-area-inset-bottom)); 
-            z-index: 50;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            padding-bottom: calc(env(safe-area-inset-bottom) + 5px); 
+            padding-top: 8px; z-index: 50;
+            background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px);
             border-top: 1px solid #f1f5f9;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
         }
 
-        .nav-btn { color: #94a3b8; transition: all 0.2s; }
-        .nav-btn.active { color: #4f46e5; transform: scale(1.1); }
-        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 2px auto 0; transition: width 0.3s; }
-        .nav-btn.active .nav-indicator { width: 20px; }
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; }
+        .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
+        .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 4px auto 0; transition: width 0.2s; }
+        .nav-btn.active .nav-indicator { width: 24px; }
 
         #toast-container { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: 90%; max-width: 320px; }
-        .toast { background: rgba(15, 23, 42, 0.95); color: white; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: slideDown 0.3s forwards; pointer-events: auto; font-size: 13px; font-weight: 600; text-align: center; }
+        .toast { background: rgba(15, 23, 42, 0.95); color: white; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); animation: slideDown 0.2s forwards; pointer-events: auto; font-size: 13px; font-weight: 600; text-align: center; }
         .toast.error { background: rgba(220, 38, 38, 0.95); }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .loader-overlay { display: flex; position: fixed; inset: 0; background: #f8fafc; z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 15px; }
-        
         .modal { display: none; position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; backdrop-filter: blur(3px); background-color: rgba(0,0,0,0.5); }
         .modal.open { display: flex; }
         .modal-box { padding: 1.5rem; width: 90%; max-width: 20rem; border-radius: 1.5rem; background: white; margin: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 80vh; overflow-y: auto; }
@@ -68,12 +65,14 @@
         .input-error { border: 2px solid #ef4444 !important; background-color: #fef2f2 !important; animation: shake 0.4s ease-in-out; }
         .ratio-err { color: #ef4444 !important; animation: pulse 1s infinite; }
 
-        .acc-btn { border: 2px solid #e2e8f0; transition: all 0.2s; position: relative; overflow: hidden; background: white; opacity: 0.7; color: #64748b; }
+        .acc-btn { border: 2px solid #e2e8f0; transition: all 0.1s; position: relative; overflow: hidden; background: white; opacity: 0.7; color: #64748b; }
+        .acc-btn:active { transform: scale(0.98); }
         .acc-btn.selected { border-color: #4f46e5; background-color: #eef2ff; color: #4f46e5; transform: scale(1.02); opacity: 1; box-shadow: 0 4px 10px -2px rgba(79, 70, 229, 0.2); border-width: 2px; }
         .acc-btn .check-icon { display: none; }
         .acc-btn.selected .check-icon { display: block; position: absolute; top: 2px; right: 2px; font-size: 10px; }
 
         .cat-btn { border: 2px solid #f1f5f9; transition: all 0.1s; opacity: 0.7; transform: scale(0.95); }
+        .cat-btn:active { transform: scale(0.9); }
         .cat-btn.selected { border-color: #4f46e5; background-color: #eef2ff; opacity: 1; transform: scale(1.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
         .avatar-btn { font-size: 2rem; padding: 5px; border-radius: 50%; opacity: 0.6; transition: all 0.2s; border: 2px solid transparent; }
@@ -104,7 +103,7 @@
     </div>
 
     <!-- 2. SIGNUP WIZARD -->
-    <div id="signup-screen" class="fixed inset-0 z-50 bg-white p-6 overflow-y-auto hidden safe-top">
+    <div id="signup-screen" class="fixed inset-0 z-50 bg-white p-6 overflow-y-auto hidden" style="padding-top: calc(env(safe-area-inset-top) + 20px);">
         <div class="max-w-md mx-auto">
             <button onclick="goToAuth()" class="mb-4 px-4 py-2 bg-slate-100 rounded-full text-xs font-bold text-slate-500">⬅ Back</button>
             <div id="step-1">
@@ -135,7 +134,7 @@
     </div>
 
     <!-- 3. MAIN APP -->
-    <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden safe-top overflow-hidden">
+    <div id="app-container" class="flex-1 flex flex-col max-w-md mx-auto w-full hidden overflow-hidden">
         <header class="px-4 pb-2 shrink-0">
             <div id="parent-tools" class="hidden flex justify-between items-center mb-4 bg-indigo-50 p-2 rounded-2xl border border-indigo-100">
                 <select id="child-select" onchange="handleParentChildSwitch(this.value)" class="bg-transparent text-indigo-800 font-bold text-sm outline-none px-2 flex-1"></select>
@@ -224,7 +223,7 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav id="bottom-nav" class="hidden flex justify-around p-2">
+    <nav id="bottom-nav" class="hidden flex justify-around">
         <button onclick="showTab('wallet')" id="nav-wallet" class="nav-btn active flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">👛</span><span class="text-[9px] font-black uppercase">Wallet</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('goals')" id="nav-goals" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">🎯</span><span class="text-[9px] font-black uppercase">Goals</span><div class="nav-indicator"></div></button>
         <button onclick="showTab('review')" id="nav-review" class="nav-btn flex-1 flex flex-col items-center py-2"><span class="text-2xl mb-1">📊</span><span class="text-[9px] font-black uppercase">Report</span><div class="nav-indicator"></div></button>
@@ -306,6 +305,12 @@
                 try {
                     const d = JSON.parse(cached);
                     console.log("Loading from Cache ⚡");
+                    // 1. Force downgrade
+                    if (d.role === 'Parent') {
+                        console.log("Security: Downgrading Parent to Child view.");
+                        d.role = 'Child';
+                        localStorage.setItem('pb_cache', JSON.stringify(d));
+                    }
                     state.fid = d.fid; state.cid = d.cid; state.role = d.role;
                     renderDash(d.data);
                     document.getElementById('global-loader').classList.add('hidden');
@@ -497,6 +502,7 @@
         async function submitExpense(){ 
             const a=parseFloat(document.getElementById('exp-amount').value), d=document.getElementById('exp-desc').value, ac=document.getElementById('exp-account').value, cat=document.getElementById('exp-category').value;
             if(!a || !ac) return toast('Amount & Account required','error');
+            if (a > 100000) return toast("Amount too high (Max 100k)", 'error'); // 2. Cap Check
             closeModal('expense-modal');
             const k = ac.split(' ')[0].toLowerCase();
             state.balances[k] -= a; document.getElementById(`bal-${k}`).innerText = '$'+state.balances[k].toFixed(2);
@@ -560,16 +566,18 @@
                 const s = parseInt(r.querySelector('.c-r-spend').value) || 0;
                 const v = parseInt(r.querySelector('.c-r-save').value) || 0;
                 const h = parseInt(r.querySelector('.c-r-share').value) || 0;
+                const amt = parseFloat(r.querySelector('.c-amt').value) || 0;
 
                 if (!cName) return toast("Child name missing", 'error');
                 if (cCode === parentPin) return toast(`PIN Conflict: Child ${cName} cannot have same code as Parent.`, 'error');
                 if (s + v + h !== 100) return toast(`Child ${cName}: Ratios must equal 100%`, 'error');
+                if (amt > 100000) return toast(`Child ${cName}: Amount too high (Max 100k)`, 'error'); // 2. Cap Check
 
                 kids.push({ 
                     name: cName, 
                     avatar: r.querySelector('.c-avatar').value, 
                     code: cCode, 
-                    weeklyAmt: r.querySelector('.c-amt').value, 
+                    weeklyAmt: amt, 
                     ratios: {spend:s, save:v, share:h}
                 });
             }
@@ -593,9 +601,11 @@
             const s = parseInt(form.querySelector('.c-r-spend').value) || 0;
             const v = parseInt(form.querySelector('.c-r-save').value) || 0;
             const h = parseInt(form.querySelector('.c-r-share').value) || 0;
+            const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
+            if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); // 2. Cap Check
 
-            const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: form.querySelector('.c-amt').value, ratios: { spend: s, save: v, share: h } }; 
+            const data = { name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             closeModal('add-child-modal'); 
             try { const res = await api('addChild', data); toast('Added!'); state.cid = res.newChildId; fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
         }
@@ -623,14 +633,26 @@
             const s = parseInt(form.querySelector('.c-r-spend').value) || 0;
             const v = parseInt(form.querySelector('.c-r-save').value) || 0;
             const h = parseInt(form.querySelector('.c-r-share').value) || 0;
+            const amt = parseFloat(form.querySelector('.c-amt').value) || 0;
             if (s + v + h !== 100) return toast("Ratios must equal 100%", 'error');
+            if (amt > 100000) return toast("Amount too high (Max 100k)", 'error'); // 2. Cap Check
 
-            const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: form.querySelector('.c-amt').value, ratios: { spend: s, save: v, share: h } }; 
+            const data = { childId: state.cid, name: form.querySelector('.c-name').value, avatar: form.querySelector('.c-avatar').value, code: form.querySelector('.c-code').value, weeklyAmt: amt, ratios: { spend: s, save: v, share: h } }; 
             closeModal('profile-modal'); 
             try { await api('updateChildProfile', data); toast('Updated'); fetchDash(true); } catch(e) { toast(e.message, 'error'); } 
         }
-        async function submitReward(){ const a=document.getElementById('rew-amount').value,d=document.getElementById('rew-desc').value; closeModal('reward-modal'); try{await api('addReward',{amount:a,description:d});toast('Sent');fetchDash(false);}catch(e){toast(e.message,'error');} }
-        async function submitTransfer(){ const a=document.getElementById('trans-amount').value,f=document.getElementById('trans-from').value,t=document.getElementById('trans-to').value; closeModal('transfer-modal'); try{await api('transfer',{amount:a,from:f,to:t});toast('Done');fetchDash(false);}catch(e){toast(e.message,'error');} }
+        async function submitReward(){ 
+            const a=parseFloat(document.getElementById('rew-amount').value), d=document.getElementById('rew-desc').value; 
+            if (a > 100000) return toast("Amount too high (Max 100k)", 'error'); // 2. Cap Check
+            closeModal('reward-modal'); 
+            try{await api('addReward',{amount:a,description:d});toast('Sent');fetchDash(false);}catch(e){toast(e.message,'error');} 
+        }
+        async function submitTransfer(){ 
+            const a=parseFloat(document.getElementById('trans-amount').value),f=document.getElementById('trans-from').value,t=document.getElementById('trans-to').value; 
+            if (a > 100000) return toast("Amount too high (Max 100k)", 'error'); // 2. Cap Check
+            closeModal('transfer-modal'); 
+            try{await api('transfer',{amount:a,from:f,to:t});toast('Done');fetchDash(false);}catch(e){toast(e.message,'error');} 
+        }
         async function submitGoal(){ const n=document.getElementById('goal-name').value,t=document.getElementById('goal-target').value; closeModal('goal-modal'); try{await api('addGoal',{name:n,target:t});toast('Saved');fetchDash(false);}catch(e){toast(e.message,'error');} }
         function openRedeemModal(id, amt, name) { document.getElementById('redeem-msg').innerText = `Use $${amt} from Save Jar to buy "${name}"?`; document.getElementById('redeem-confirm-btn').onclick = () => confirmRedeem(id, amt, name); openModal('redeem-modal'); }
         async function confirmRedeem(id, amt, name) { closeModal('redeem-modal'); try { await api('redeemGoal', {id, amount:amt, name}); toast('Redeemed!'); fetchDash(false); } catch(e) { toast(e.message, 'error'); } }
