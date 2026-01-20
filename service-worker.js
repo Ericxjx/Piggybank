@@ -1,8 +1,9 @@
-const CACHE_NAME = 'piggy-v2';
+const CACHE_NAME = 'piggy-v3'; // Bumped version to force HTML update
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './icon.png',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js',
@@ -29,7 +30,7 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  if (url.hostname.includes('script.google.com')) return; // API calls network only
+  if (url.hostname.includes('script.google.com')) return; 
 
   e.respondWith(
     caches.match(e.request).then((cached) => {
