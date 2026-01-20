@@ -30,20 +30,26 @@
             padding-top: env(safe-area-inset-top); 
         }
 
-        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 100px; -webkit-overflow-scrolling: touch; } 
+        .tab-content { display: none; opacity: 0; animation: fadeIn 0.2s forwards; height: 100%; overflow-y: auto; padding-bottom: 90px; -webkit-overflow-scrolling: touch; } 
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* 优化 1: 极致压缩底部留白，适配 iPhone Pro Max */
         #bottom-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
+            /* 紧贴 Home Indicator 安全区 */
             padding-bottom: env(safe-area-inset-bottom); 
-            padding-top: 10px; z-index: 50;
-            background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px);
+            /* 减少顶部内边距，让图标更靠下 */
+            padding-top: 4px; 
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(16px);
             border-top: 1px solid #f1f5f9;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
         }
 
-        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; padding-bottom: 8px; }
+        /* 移除多余 padding，让按钮更紧凑 */
+        .nav-btn { color: #94a3b8; transition: transform 0.1s, color 0.1s; padding-bottom: 4px; }
         .nav-btn.active { color: #4f46e5; transform: scale(1.05); }
         .nav-indicator { height: 4px; width: 0; background: #4f46e5; border-radius: 9px; margin: 2px auto 0; transition: width 0.2s; }
         .nav-btn.active .nav-indicator { width: 24px; }
@@ -95,7 +101,6 @@
             <input type="text" id="login-code" placeholder="PIN CODE" class="w-full p-4 bg-slate-100 rounded-2xl text-center text-2xl font-black tracking-widest outline-none mb-3 uppercase focus:ring-2 ring-indigo-500 transition-all">
             <input type="email" id="login-email" placeholder="Email" class="w-full p-4 bg-slate-100 rounded-2xl text-center font-bold outline-none mb-6 focus:ring-2 ring-indigo-500 transition-all">
             <button id="login-btn" onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50">Unlock</button>
-            <!-- 优化 4: 显著的 Create Family 按钮 -->
             <button onclick="goToSignup()" class="w-full mt-4 bg-indigo-50 text-indigo-600 py-3 rounded-xl font-black text-sm active:bg-indigo-100">✨ Create New Family ✨</button>
         </div>
     </div>
@@ -121,8 +126,10 @@
                 <p class="text-xs text-rose-500 mb-4 font-bold bg-rose-50 p-2 rounded-lg">Rule: PIN must start with a Letter + 3 digits/letters (e.g. P123, Alex)</p>
                 <div class="space-y-6">
                     <div class="bg-indigo-50 p-5 rounded-[2rem] border border-indigo-100">
-                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-2">Parent Admin PIN</label>
+                        <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">Parent Admin PIN</label>
                         <input id="reg-parent-pin" placeholder="P888" class="w-full p-3 bg-white text-indigo-600 rounded-xl font-black text-center text-2xl tracking-widest outline-none uppercase border-2 border-transparent focus:border-indigo-500" maxlength="6">
+                        <!-- 优化 3: PIN 提示文案 -->
+                        <div class="text-[10px] text-slate-400 text-center mt-2 font-bold px-4">This PIN is your Login Key. Please remember it! (Also sent to email)</div>
                     </div>
                     <div id="children-list" class="space-y-4"></div>
                     <button onclick="addChildRow('children-list')" class="w-full py-3 border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-2xl">+ Add Child</button>
@@ -298,9 +305,7 @@
             return data;
         }
 
-        // 优化 2: Validate PIN format
         function isValidPin(pin) {
-            // Must start with Letter, 3+ alphanumerics. Total length >= 4
             const p = pin.toUpperCase().trim();
             return /^[A-Z][A-Z0-9]{3,}$/.test(p);
         }
@@ -308,7 +313,7 @@
         function init() {
             const cached = localStorage.getItem('pb_cache');
             
-            // 优化 3: Auto-fill email
+            // 优化 4: Auto-fill email
             const savedEmail = localStorage.getItem('saved_email');
             if (savedEmail) document.getElementById('login-email').value = savedEmail;
 
@@ -335,6 +340,14 @@
 
         function showAuth() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
         
+        function showLoader(msg="Loading...") {
+            const l = document.getElementById('global-loader');
+            const m = document.getElementById('loader-msg');
+            if(l && m) { m.innerText = msg; l.classList.remove('hidden'); }
+        }
+
+        function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); }
+
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
         function openModal(id) { 
             const el = document.getElementById(id); if(el) el.classList.add('open'); 
@@ -489,7 +502,7 @@
             btn.disabled = true; btn.innerText = "Verifying...";
             try {
                 const res = await api('login', {code, email});
-                // 优化 3: Save email
+                // 优化 4: Save email
                 localStorage.setItem('saved_email', email);
                 state.fid = res.familyId; state.cid = res.childId; state.role = res.role;
                 await fetchDash(true);
@@ -612,6 +625,7 @@
         
         function selectCategory(c,b) { document.getElementById('exp-category').value=c; document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }
         function selectAccount(a) { document.getElementById('exp-account').value=a; document.querySelectorAll('.acc-btn').forEach(x=>x.classList.remove('selected')); document.querySelector(`[data-val="${a}"]`).classList.add('selected'); }
+        // 优化 4: Logout without clearing saved email
         function logout() { localStorage.removeItem('pb_cache'); location.reload(); }
         function handleParentChildSwitch(val) { if (val === 'ADD_NEW') { document.getElementById('new-child-form').innerHTML = ''; addChildRow('new-child-form'); openModal('add-child-modal'); document.getElementById('child-select').value = state.cid; } else { state.cid = val; fetchDash(true); } }
         async function submitAddChild() { 
@@ -694,22 +708,28 @@
         function goToSignup() { document.getElementById('step-1').classList.remove('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('reg-email').value = ''; document.getElementById('reg-otp').value = ''; document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
         function goToAuth() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
 
-        // 优化 1: Logic - Single Child direct switch
+        // 优化 1: Logic - Single Child direct switch with Loader Animation
         function handleParentExit() {
-            if (state.children && state.children.length === 1) {
-                // Direct switch if only 1 child
-                switchChild(state.children[0].id);
-            } else if (state.children && state.children.length > 1) {
-                // Show modal if multiple
-                const grid = document.getElementById('child-pick-grid');
-                grid.innerHTML = state.children.map(c => `<button onclick="switchChild('${c.id}')" class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center active:scale-95 transition-transform"><span class="text-3xl mb-2">${c.avatar}</span><span class="font-bold text-slate-700 text-xs">${c.name}</span></button>`).join('');
-                openModal('pick-child-modal');
-            } else {
-                logout();
-            }
+            // 优化 2: Show Loader immediately for feedback
+            showLoader("Switching...");
+            
+            // Allow small delay for UI to render loader
+            setTimeout(() => {
+                if (state.children && state.children.length === 1) {
+                    switchChild(state.children[0].id);
+                } else if (state.children && state.children.length > 1) {
+                    hideLoader();
+                    const grid = document.getElementById('child-pick-grid');
+                    grid.innerHTML = state.children.map(c => `<button onclick="switchChild('${c.id}')" class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center active:scale-95 transition-transform"><span class="text-3xl mb-2">${c.avatar}</span><span class="font-bold text-slate-700 text-xs">${c.name}</span></button>`).join('');
+                    openModal('pick-child-modal');
+                } else {
+                    logout();
+                }
+            }, 50);
         }
 
         function switchChild(id) { 
+            showLoader("Switching...");
             state.cid = id; 
             state.role = 'Child'; 
             closeModal('pick-child-modal'); 
