@@ -30,7 +30,6 @@
             padding-top: env(safe-area-inset-top); 
         }
 
-        /* 修复 2: 隐藏滚动条的核心代码 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -42,9 +41,9 @@
             overflow-y: auto; 
             padding-bottom: 90px; 
             -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
         } 
-        /* 应用隐藏滚动条 */
-        .tab-content { scrollbar-width: none; -ms-overflow-style: none; }
         .tab-content::-webkit-scrollbar { display: none; }
 
         .tab-content.active { display: block; }
@@ -75,7 +74,6 @@
         .modal { display: none; position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; backdrop-filter: blur(3px); background-color: rgba(0,0,0,0.5); }
         .modal.open { display: flex; }
         .modal-box { padding: 1.5rem; width: 90%; max-width: 20rem; border-radius: 1.5rem; background: white; margin: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 80vh; overflow-y: auto; }
-        /* Modal Scroll Hide */
         .modal-box::-webkit-scrollbar { display: none; }
         
         .disabled-claim { background: #e2e8f0 !important; color: #94a3b8 !important; pointer-events: none; transform: none !important; box-shadow: none !important; animation: none !important; }
@@ -96,9 +94,6 @@
         .avatar-btn.selected { opacity: 1; transform: scale(1.2); border-color: #4f46e5; background: #eef2ff; }
         
         .check-status { font-size: 10px; font-weight: bold; margin-top: 2px; height: 14px; }
-        .check-status.checking { color: #f59e0b; }
-        .check-status.valid { color: #10b981; }
-        .check-status.invalid { color: #ef4444; }
     </style>
 </head>
 <body class="loading">
@@ -294,8 +289,8 @@
     <div id="goal-modal" class="modal"><div class="modal-box text-center"><h2 class="text-xl font-black mb-6 text-slate-800">New Goal 🎯</h2><input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none"><input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none"><button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Goal</button><button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button></div></div>
 
     <script>
-        // ⚠️⚠️⚠️ 请在此填入你的 GAS Web App URL ⚠️⚠️⚠️
-        const API_URL = "piggybank-backend.vercel.app/api"; 
+        // ⚠️⚠️⚠️ 必须使用 https:// 且替换为你自己的 Vercel 域名 ⚠️⚠️⚠️
+        const API_URL = "https://piggybank-backend.vercel.app/api"; 
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./service-worker.js')
@@ -308,11 +303,24 @@
 
         function toast(msg, type='success') { const div = document.createElement('div'); div.className = `toast ${type}`; div.innerText = msg; document.getElementById('toast-container').appendChild(div); setTimeout(() => div.remove(), 3000); }
         
+        // 核心修复：添加 headers: Content-Type
         async function api(action, payload) {
             const response = await fetch(API_URL, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({ ...payload, action, familyId: state.fid, childId: state.cid, identity: state.role })
             });
+            
+            // 增加错误处理，如果返回的不是 JSON (比如 404 HTML)
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                console.error("Non-JSON response:", text);
+                throw new Error("Server Error: Check API URL");
+            }
+
             const data = await response.json();
             if (!data.success) throw new Error(data.error);
             return data;
@@ -326,7 +334,6 @@
         function init() {
             const cached = localStorage.getItem('pb_cache');
             
-            // 优化 4: Auto-fill email
             const savedEmail = localStorage.getItem('saved_email');
             if (savedEmail) document.getElementById('login-email').value = savedEmail;
 
@@ -339,7 +346,10 @@
                         localStorage.setItem('pb_cache', JSON.stringify(d));
                     }
                     state.fid = d.fid; state.cid = d.cid; state.role = d.role;
-                    renderDash(d.data);
+                    // 尝试渲染缓存，但如果数据结构已变（从 GAS 到 Supabase），可能会有问题
+                    // 所以这里加个 try catch 保护
+                    try { renderDash(d.data); } catch(e) { console.warn("Cache format outdated"); }
+                    
                     document.getElementById('global-loader').classList.add('hidden');
                     fetchDash(false);
                 } catch(e) {
@@ -353,7 +363,6 @@
 
         function showAuth() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
         
-        // 优化 2: Loader for switching
         function showLoader(msg="Loading...") {
             const l = document.getElementById('global-loader');
             const m = document.getElementById('loader-msg');
@@ -393,6 +402,8 @@
                 localStorage.setItem('pb_cache', JSON.stringify({ fid:state.fid, cid:state.cid, role:state.role, data: d }));
             } catch(e) {
                 console.error("Sync failed", e);
+                // 如果是后端报错导致数据无法加载，且缓存也不存在，则显示登录页
+                if(!state.fid) showAuth();
             } finally {
                 if(showLoader) document.body.classList.remove('loading');
             }
