@@ -42,7 +42,7 @@
             overflow-y: auto; 
             
             /* 导航栏高度(64) + 底部间距(20) + 安全区 + 额外呼吸感(20) = ~100px */
-            padding-bottom: calc(65px + env(safe-area-inset-bottom));
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
             
             -webkit-overflow-scrolling: touch; 
             scrollbar-width: none; 
@@ -57,7 +57,7 @@
         #bottom-nav { 
             position: fixed; 
             /* 底部距离：留出安全区 + 20px 悬浮感 */
-            bottom: calc(20px + env(safe-area-inset-bottom)); 
+            bottom: calc(12px + env(safe-area-inset-bottom)); 
             
             /* 居中定位 */
             left: 50%;
@@ -66,7 +66,7 @@
             /* 📏 宽度对齐：左右各留 16px，与顶部 Header 的 Padding 对齐 */
             width: calc(100% - 32px);
             max-width: 440px; /* 限制最大宽度，防止在 iPad 上太宽 */
-            height: 70px; /* 稍微加高，增加点击舒适度 */
+            height: 54px; /* 稍微加高，增加点击舒适度 */
             
             /* 💎 质感核心：高通透毛玻璃 */
             background: rgba(255, 255, 255, 0.75); /* 更透明 */
@@ -74,7 +74,7 @@
             -webkit-backdrop-filter: blur(25px) saturate(200%);
             
             /* 形状 */
-            border-radius: 35px; /* 全圆角胶囊状 */
+            border-radius: 27px; /* 全圆角胶囊状 */
             
             /* 🎨 边框与阴影：增加层次感 */
             /* 1px 半透明白边框，模拟玻璃边缘反光 */
