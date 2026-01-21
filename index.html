@@ -41,7 +41,7 @@
             display: none; 
             height: 100%; 
             overflow-y: auto; 
-            padding-bottom: 120px; 
+            padding-bottom: 120px; /* Space for FAB & Nav */
             padding-left: 20px; padding-right: 20px;
         }
         .tab-content.active { display: block; animation: fadeIn 0.3s forwards; }
@@ -71,12 +71,11 @@
         }
         body.dark-mode .save-card { background: #1e293b; border-color: #334155; }
         .interest-bubble {
-            position: absolute; top: -10px; right: 10px;
+            position: absolute; top: 10px; right: 10px;
             background: #fbbf24; color: #78350f; font-size: 11px; font-weight: bold;
-            padding: 8px 16px; border-radius: 20px;
+            padding: 6px 12px; border-radius: 20px;
             box-shadow: 0 4px 10px rgba(251, 191, 36, 0.4);
-            animation: bounce 2s infinite; cursor: pointer; z-index: 10;
-            border: 2px solid white;
+            animation: bounce 2s infinite; cursor: pointer;
         }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
@@ -112,6 +111,7 @@
 <body class="loading">
     <div id="toast-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-xs pointer-events-none"></div>
 
+    <!-- 1. AUTH SCREEN (复用 v1 逻辑) -->
     <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
         <div class="text-6xl mb-6">🐷</div>
         <h1 class="text-4xl font-black text-indigo-600 mb-8 tracking-tight">PiggyBank v2</h1>
@@ -123,28 +123,7 @@
         <button onclick="showSignup()" class="mt-8 text-indigo-400 font-bold text-sm">New Family?</button>
     </div>
 
-    <div id="signup-screen" class="hidden fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <h1 class="text-3xl font-black text-indigo-600 mb-6 tracking-tight">New Family 🏠</h1>
-        <div class="w-full max-w-sm bg-white p-6 rounded-[2rem] shadow-xl space-y-4">
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Parent / Admin</h3>
-                <input id="reg-fam-name" type="text" placeholder="Family Name (e.g. The Smiths)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm mb-2">
-                <input id="reg-email" type="email" placeholder="Parent Email" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm mb-2">
-                <input id="reg-pin" type="text" placeholder="Set Admin PIN (e.g. 8888)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center tracking-widest">
-            </div>
-            <div class="pt-4 border-t border-slate-100">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">First Child</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <input id="reg-kid-name" type="text" placeholder="Name" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm">
-                    <input id="reg-kid-code" type="text" placeholder="PIN (e.g. 1234)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center">
-                </div>
-                <input id="reg-kid-amt" type="number" placeholder="Weekly Allowance ($)" class="w-full mt-2 p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center">
-            </div>
-            <button onclick="handleSignup()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-transform mt-4">Create Account</button>
-        </div>
-        <button onclick="hideSignup()" class="mt-6 text-slate-400 font-bold text-sm">Back to Login</button>
-    </div>
-
+    <!-- 2. MAIN APP -->
     <div id="app-container" class="flex-1 hidden">
         <header class="px-6 pt-4 pb-2 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -154,9 +133,14 @@
                     <p id="header-role" class="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">My Wallet</p>
                 </div>
             </div>
+            <div id="header-actions" class="flex gap-2">
+                <!-- Injected via JS -->
+            </div>
         </header>
 
+        <!-- TAB 1: WALLET -->
         <main id="tab-wallet" class="tab-content active pt-4">
+            <!-- Credit Card -->
             <div id="card-spend" class="credit-card mb-4" onclick="showTab('review')">
                 <div class="flex justify-between items-start">
                     <div class="chip"></div>
@@ -172,6 +156,7 @@
                 </div>
             </div>
 
+            <!-- Savings Card -->
             <div class="save-card mb-6">
                 <div id="interest-bubble" class="interest-bubble hidden" onclick="claimInterest()">+ $0.00 Interest 💰</div>
                 <div class="text-5xl mb-2">🐷</div>
@@ -186,12 +171,14 @@
             </div>
         </main>
 
+        <!-- TAB 2: DREAMS -->
         <main id="tab-dreams" class="tab-content pt-4">
             <h2 class="text-2xl font-black mb-6 px-2">My Dreams 🚀</h2>
             <div id="goals-list" class="space-y-4"></div>
             <button onclick="openModal('goal-modal')" class="w-full bg-slate-100 text-slate-400 py-6 rounded-[2rem] font-bold mt-4 border-2 border-dashed border-slate-200 hover:bg-slate-50 transition">+ Add New Dream</button>
         </main>
 
+        <!-- TAB 3: REVIEW -->
         <main id="tab-review" class="tab-content pt-4">
             <h2 class="text-2xl font-black mb-4 px-2">Statement 📊</h2>
             <div class="grid grid-cols-2 gap-3 mb-6">
@@ -200,13 +187,14 @@
                     <div id="stat-exp" class="text-xl font-black text-rose-500 mt-1">$0</div>
                 </div>
                 <div class="bg-white p-4 rounded-3xl shadow-sm text-center">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">Income</div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">Saved</div>
                     <div id="stat-inc" class="text-xl font-black text-emerald-500 mt-1">$0</div>
                 </div>
             </div>
             <div id="full-tx-list" class="space-y-3"></div>
         </main>
 
+        <!-- TAB 4: ME -->
         <main id="tab-me" class="tab-content pt-4">
             <div class="bg-white rounded-[2.5rem] p-8 text-center mb-6 shadow-sm">
                 <div id="profile-avatar" class="text-6xl mb-4 inline-block bg-slate-50 p-4 rounded-full">😎</div>
@@ -214,6 +202,7 @@
                 <div id="profile-fam" class="text-xs font-bold text-slate-400 uppercase mt-1 tracking-widest">Family</div>
             </div>
 
+            <!-- Parent Admin Panel -->
             <div id="admin-panel" class="hidden mb-6 animate-in slide-in-from-bottom-5">
                 <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-2">Central Bank Controls 🏦</h3>
                 <div class="bg-slate-800 text-white p-6 rounded-[2rem] shadow-xl">
@@ -244,6 +233,7 @@
         </main>
     </div>
 
+    <!-- FAB -->
     <div id="fab-container" class="fab-container hidden">
         <div id="fab-menu" class="fab-menu">
             <div class="fab-item">
@@ -258,6 +248,7 @@
         <button id="fab-main" onclick="toggleFab()" class="fab-main">+</button>
     </div>
 
+    <!-- BOTTOM NAV -->
     <nav id="bottom-nav" class="hidden">
         <button onclick="showTab('wallet')" class="nav-btn active text-2xl">👛</button>
         <button onclick="showTab('dreams')" class="nav-btn text-2xl">🚀</button>
@@ -265,6 +256,7 @@
         <button onclick="showTab('me')" class="nav-btn text-2xl">👤</button>
     </nav>
 
+    <!-- MODALS -->
     <div id="expense-modal" class="modal">
         <div class="modal-box text-center">
             <h2 class="text-xl font-black mb-6 text-slate-800">💸 Buy Something</h2>
@@ -337,42 +329,6 @@
             }
         }
 
-        // --- Auth Logic ---
-        function showSignup() { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
-        function hideSignup() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
-
-        async function handleSignup() {
-            const famName = document.getElementById('reg-fam-name').value;
-            const email = document.getElementById('reg-email').value;
-            const pin = document.getElementById('reg-pin').value;
-            const kidName = document.getElementById('reg-kid-name').value;
-            const kidCode = document.getElementById('reg-kid-code').value;
-            const kidAmt = document.getElementById('reg-kid-amt').value;
-
-            if(!famName || !email || !pin || !kidName || !kidCode || !kidAmt) return toast("Please fill all fields", 'error');
-
-            try {
-                toast("Creating...", 'info');
-                const res = await api('createFamily', { contactEmail: email, familyName: famName, parentPin: pin, children: [{ name: kidName, code: kidCode, weeklyAmt: kidAmt }] });
-                
-                state.fid = res.familyId; state.cid = res.childId; state.role = 'Parent';
-                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
-                setTimeout(() => { document.getElementById('signup-screen').classList.add('hidden'); fetchDash(); }, 1000);
-            } catch(e) {}
-        }
-
-        async function handleLogin() {
-            const code = document.getElementById('login-code').value;
-            const email = document.getElementById('login-email').value;
-            if(!code || !email) return toast("Missing info", 'error');
-            try {
-                const res = await api('login', {code, email});
-                state.fid=res.familyId; state.cid=res.childId; state.role=res.role;
-                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
-                fetchDash();
-            } catch(e) {}
-        }
-
         // --- UI Logic ---
 
         function showTab(t) {
@@ -420,12 +376,12 @@
             if (isParent) document.body.classList.add('dark-mode'); 
             else document.body.classList.remove('dark-mode');
             
-            document.getElementById('header-avatar').innerText = c.avatar || '👶';
+            document.getElementById('header-avatar').innerText = c.avatar;
             document.getElementById('header-name').innerText = isParent ? `Admin: ${c.name}` : c.name;
             document.getElementById('header-role').innerText = isParent ? 'Central Bank Mode' : 'My Wallet';
 
             // 2. Wallet Tab
-            const balSpend = c.balance_spend || 0; 
+            const balSpend = c.balance_spend || 0; // Negative number
             const balSave = c.balance_save || 0;
             const isOverdue = c.overdueStats && c.overdueStats.count > 0;
 
@@ -441,6 +397,7 @@
                 document.getElementById('overdue-badge').classList.add('hidden');
             }
 
+            // Interest Bubble
             const bubble = document.getElementById('interest-bubble');
             if (c.pendingInterest > 0) {
                 bubble.classList.remove('hidden');
@@ -449,6 +406,7 @@
                 bubble.classList.add('hidden');
             }
 
+            // Allowance Button
             const allowContainer = document.getElementById('allowance-area');
             if (!d.allowanceStatus.alreadyClaimed) {
                 allowContainer.innerHTML = `<button onclick="claimAllowance()" class="w-full bg-emerald-50 text-emerald-600 py-3 rounded-2xl font-black text-sm animate-pulse border border-emerald-100">🎁 Claim Weekly Allowance $${c.weeklyAmt}</button>`;
@@ -456,15 +414,15 @@
                 allowContainer.innerHTML = `<div class="text-center text-[10px] text-slate-400 font-bold uppercase py-2">✅ Allowance Collected</div>`;
             }
 
-            // 3. Transactions
+            // 3. Transactions (Home: limit 3, Review: all)
             const renderTx = (t) => {
                 const isExp = t.amount < 0;
                 return `
                 <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm relative overflow-hidden" onclick="${isExp && !t.review ? `openReview('${t.id}')` : ''}">
                     ${t.isOverdue ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>' : ''}
                     <div>
-                        <div class="font-bold text-slate-700 text-sm">${t.description || t.category}</div>
-                        <div class="text-[10px] text-slate-400 font-bold uppercase">${new Date(t.created_at || t.date).toLocaleDateString()} • ${t.isOverdue ? '<span class="text-rose-500 font-black">OVERDUE</span>' : (isExp ? (t.is_fully_paid ? 'Paid' : 'Unpaid') : 'Income')}</div>
+                        <div class="font-bold text-slate-700 text-sm">${t.desc || t.category}</div>
+                        <div class="text-[10px] text-slate-400 font-bold uppercase">${new Date(t.date).toLocaleDateString()} • ${t.isOverdue ? '<span class="text-rose-500 font-black">OVERDUE</span>' : (isExp ? (t.is_fully_paid ? 'Paid' : 'Unpaid') : 'Income')}</div>
                     </div>
                     <div class="text-right">
                         <div class="font-black ${isExp ? 'text-rose-500' : 'text-emerald-500'}">${isExp ? '' : '+'}$${Math.abs(t.amount).toFixed(2)}</div>
@@ -502,14 +460,22 @@
 
             if (isParent) {
                 document.getElementById('admin-panel').classList.remove('hidden');
+                
+                // Rate Sliders
                 const rSave = document.getElementById('in-rate-save');
                 const rPen = document.getElementById('in-rate-penalty');
+                
+                // Only set value if not interacting to prevent jump
                 if(document.activeElement !== rSave) rSave.value = c.savings_rate || 5;
                 if(document.activeElement !== rPen) rPen.value = c.penalty_rate || 0.5;
+                
                 document.getElementById('disp-rate-save').innerText = rSave.value + '%';
                 document.getElementById('disp-rate-penalty').innerText = rPen.value + '%';
+
                 rSave.oninput = (e) => document.getElementById('disp-rate-save').innerText = e.target.value + '%';
                 rPen.oninput = (e) => document.getElementById('disp-rate-penalty').innerText = e.target.value + '%';
+
+                // Child Switcher
                 const switcher = document.getElementById('child-switcher');
                 switcher.innerHTML = d.children.map(k => `
                     <button onclick="switchChild('${k.id}')" class="min-w-[60px] p-2 rounded-xl border ${k.id===state.cid?'border-emerald-400 bg-slate-700':'border-slate-600'} flex flex-col items-center">
@@ -520,6 +486,20 @@
             } else {
                 document.getElementById('admin-panel').classList.add('hidden');
             }
+        }
+
+        // --- Actions ---
+
+        async function handleLogin() {
+            const code = document.getElementById('login-code').value;
+            const email = document.getElementById('login-email').value;
+            if(!code || !email) return toast("Missing info", 'error');
+            try {
+                const res = await api('login', {code, email});
+                state.fid=res.familyId; state.cid=res.childId; state.role=res.role;
+                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
+                fetchDash();
+            } catch(e) {}
         }
 
         async function submitExpense() {
@@ -575,6 +555,9 @@
         async function switchChild(id) { state.cid = id; fetchDash(); }
         function logout() { localStorage.removeItem('pb_cache_v2'); location.reload(); }
         
+        function showSignup() { toast("Signup via v1 temporarily", 'error'); } // Simplified for this snippet
+
+        // Init
         const cached = localStorage.getItem('pb_cache_v2');
         if(cached) {
             Object.assign(state, JSON.parse(cached));
