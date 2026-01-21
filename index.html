@@ -120,7 +120,29 @@
             <input id="login-email" type="email" placeholder="Email" class="w-full p-4 bg-slate-100 rounded-2xl text-center font-bold outline-none mb-6 focus:ring-2 ring-indigo-500">
             <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform">Unlock</button>
         </div>
-        <button onclick="toast('Please register via v1 first', 'info')" class="mt-8 text-indigo-400 font-bold text-sm">New Family?</button>
+        <button onclick="showSignup()" class="mt-8 text-indigo-400 font-bold text-sm">New Family?</button>
+    </div>
+
+    <div id="signup-screen" class="hidden fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 overflow-y-auto">
+        <h1 class="text-3xl font-black text-indigo-600 mb-6 tracking-tight">New Family 🏠</h1>
+        <div class="w-full max-w-sm bg-white p-6 rounded-[2rem] shadow-xl space-y-4">
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Parent / Admin</h3>
+                <input id="reg-fam-name" type="text" placeholder="Family Name (e.g. The Smiths)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm mb-2">
+                <input id="reg-email" type="email" placeholder="Parent Email" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm mb-2">
+                <input id="reg-pin" type="text" placeholder="Set Admin PIN (e.g. 8888)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center tracking-widest">
+            </div>
+            <div class="pt-4 border-t border-slate-100">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">First Child</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <input id="reg-kid-name" type="text" placeholder="Name" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm">
+                    <input id="reg-kid-code" type="text" placeholder="PIN (e.g. 1234)" class="w-full p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center">
+                </div>
+                <input id="reg-kid-amt" type="number" placeholder="Weekly Allowance ($)" class="w-full mt-2 p-3 bg-slate-100 rounded-xl font-bold outline-none text-sm text-center">
+            </div>
+            <button onclick="handleSignup()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-transform mt-4">Create Account</button>
+        </div>
+        <button onclick="hideSignup()" class="mt-6 text-slate-400 font-bold text-sm">Back to Login</button>
     </div>
 
     <div id="app-container" class="flex-1 hidden">
@@ -315,6 +337,42 @@
             }
         }
 
+        // --- Auth Logic ---
+        function showSignup() { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('signup-screen').classList.remove('hidden'); }
+        function hideSignup() { document.getElementById('signup-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
+
+        async function handleSignup() {
+            const famName = document.getElementById('reg-fam-name').value;
+            const email = document.getElementById('reg-email').value;
+            const pin = document.getElementById('reg-pin').value;
+            const kidName = document.getElementById('reg-kid-name').value;
+            const kidCode = document.getElementById('reg-kid-code').value;
+            const kidAmt = document.getElementById('reg-kid-amt').value;
+
+            if(!famName || !email || !pin || !kidName || !kidCode || !kidAmt) return toast("Please fill all fields", 'error');
+
+            try {
+                toast("Creating...", 'info');
+                const res = await api('createFamily', { contactEmail: email, familyName: famName, parentPin: pin, children: [{ name: kidName, code: kidCode, weeklyAmt: kidAmt }] });
+                
+                state.fid = res.familyId; state.cid = res.childId; state.role = 'Parent';
+                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
+                setTimeout(() => { document.getElementById('signup-screen').classList.add('hidden'); fetchDash(); }, 1000);
+            } catch(e) {}
+        }
+
+        async function handleLogin() {
+            const code = document.getElementById('login-code').value;
+            const email = document.getElementById('login-email').value;
+            if(!code || !email) return toast("Missing info", 'error');
+            try {
+                const res = await api('login', {code, email});
+                state.fid=res.familyId; state.cid=res.childId; state.role=res.role;
+                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
+                fetchDash();
+            } catch(e) {}
+        }
+
         // --- UI Logic ---
 
         function showTab(t) {
@@ -367,9 +425,8 @@
             document.getElementById('header-role').innerText = isParent ? 'Central Bank Mode' : 'My Wallet';
 
             // 2. Wallet Tab
-            const balSpend = c.balance_spend || 0; // Negative number
+            const balSpend = c.balance_spend || 0; 
             const balSave = c.balance_save || 0;
-            // ⚠️ 关键修复：从 overdueStats 中读取
             const isOverdue = c.overdueStats && c.overdueStats.count > 0;
 
             document.getElementById('bal-spend').innerText = '$' + Math.abs(balSpend).toFixed(2);
@@ -384,7 +441,6 @@
                 document.getElementById('overdue-badge').classList.add('hidden');
             }
 
-            // Interest Bubble
             const bubble = document.getElementById('interest-bubble');
             if (c.pendingInterest > 0) {
                 bubble.classList.remove('hidden');
@@ -393,7 +449,6 @@
                 bubble.classList.add('hidden');
             }
 
-            // Allowance Button
             const allowContainer = document.getElementById('allowance-area');
             if (!d.allowanceStatus.alreadyClaimed) {
                 allowContainer.innerHTML = `<button onclick="claimAllowance()" class="w-full bg-emerald-50 text-emerald-600 py-3 rounded-2xl font-black text-sm animate-pulse border border-emerald-100">🎁 Claim Weekly Allowance $${c.weeklyAmt}</button>`;
@@ -447,21 +502,14 @@
 
             if (isParent) {
                 document.getElementById('admin-panel').classList.remove('hidden');
-                
-                // Rate Sliders
                 const rSave = document.getElementById('in-rate-save');
                 const rPen = document.getElementById('in-rate-penalty');
-                
                 if(document.activeElement !== rSave) rSave.value = c.savings_rate || 5;
                 if(document.activeElement !== rPen) rPen.value = c.penalty_rate || 0.5;
-                
                 document.getElementById('disp-rate-save').innerText = rSave.value + '%';
                 document.getElementById('disp-rate-penalty').innerText = rPen.value + '%';
-
                 rSave.oninput = (e) => document.getElementById('disp-rate-save').innerText = e.target.value + '%';
                 rPen.oninput = (e) => document.getElementById('disp-rate-penalty').innerText = e.target.value + '%';
-
-                // Child Switcher
                 const switcher = document.getElementById('child-switcher');
                 switcher.innerHTML = d.children.map(k => `
                     <button onclick="switchChild('${k.id}')" class="min-w-[60px] p-2 rounded-xl border ${k.id===state.cid?'border-emerald-400 bg-slate-700':'border-slate-600'} flex flex-col items-center">
@@ -472,20 +520,6 @@
             } else {
                 document.getElementById('admin-panel').classList.add('hidden');
             }
-        }
-
-        // --- Actions ---
-
-        async function handleLogin() {
-            const code = document.getElementById('login-code').value;
-            const email = document.getElementById('login-email').value;
-            if(!code || !email) return toast("Missing info", 'error');
-            try {
-                const res = await api('login', {code, email});
-                state.fid=res.familyId; state.cid=res.childId; state.role=res.role;
-                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
-                fetchDash();
-            } catch(e) {}
         }
 
         async function submitExpense() {
@@ -541,7 +575,6 @@
         async function switchChild(id) { state.cid = id; fetchDash(); }
         function logout() { localStorage.removeItem('pb_cache_v2'); location.reload(); }
         
-        // Init
         const cached = localStorage.getItem('pb_cache_v2');
         if(cached) {
             Object.assign(state, JSON.parse(cached));
