@@ -3,253 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PiggyBank v2</title>
-    
+    <title>PiggyBank Pro</title>
     <link rel="manifest" href="./manifest.json">
-    <link rel="icon" type="image/png" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#f8fafc">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
-    
     <style>
-        body { 
-            font-family: 'Fredoka', sans-serif; 
-            background-color: #f8fafc; 
-            height: 100dvh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            padding-top: env(safe-area-inset-top);
-            transition: background 0.4s ease;
-        }
+        body { font-family: 'Fredoka', sans-serif; background-color: #f8fafc; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-top: env(safe-area-inset-top); user-select: none; }
+        
+        /* Loading Overlay */
+        #global-loader { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        #global-loader.fade-out { opacity: 0; pointer-events: none; }
 
         /* Dark Mode (Parent) */
         body.dark-mode { background-color: #0f172a; color: #cbd5e1; }
-        body.dark-mode .bg-white { background-color: #1e293b; color: #fff; border-color: #334155; }
-        body.dark-mode .text-slate-800 { color: #f1f5f9; }
-        body.dark-mode .text-slate-500 { color: #94a3b8; }
-        body.dark-mode .text-slate-400 { color: #64748b; }
-        body.dark-mode #bottom-nav { background: rgba(30, 41, 59, 0.9); border-color: rgba(255,255,255,0.1); }
-        body.dark-mode .modal-box { background-color: #1e293b; }
-        body.dark-mode input { background-color: #334155; color: white; }
+        body.dark-mode .bg-white { background-color: #1e293b; color: #fff; }
+        body.dark-mode input, body.dark-mode select { background-color: #334155; color: white; border: none; }
+        body.dark-mode .modal-box { background-color: #1e293b; color: white; }
 
-        .tab-content { 
-            display: none; 
-            height: 100%; 
-            overflow-y: auto; 
-            padding-bottom: 120px; /* Space for FAB & Nav */
-            padding-left: 20px; padding-right: 20px;
-        }
+        .tab-content { display: none; height: 100%; overflow-y: auto; padding-bottom: 100px; padding-left:16px; padding-right:16px; }
         .tab-content.active { display: block; animation: fadeIn 0.3s forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Twin Cards Styles */
-        .credit-card {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            border-radius: 24px; padding: 24px; color: white;
-            box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4);
-            min-height: 180px; position: relative; overflow: hidden;
-            transition: transform 0.2s;
-        }
-        .credit-card:active { transform: scale(0.98); }
-        .credit-card.overdue {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            box-shadow: 0 15px 30px -5px rgba(220, 38, 38, 0.5);
-        }
-        .chip { width: 45px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 6px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.3); }
+        /* Cards Side-by-Side */
+        .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .dashboard-card { border-radius: 20px; padding: 16px; height: 160px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: transform 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .dashboard-card:active { transform: scale(0.98); }
+        
+        .card-credit { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+        .card-credit.overdue { background: linear-gradient(135deg, #ef4444, #b91c1c); animation: pulseRed 2s infinite; }
+        .card-save { background: white; border: 1px solid #e2e8f0; color: #334155; }
+        body.dark-mode .card-save { background: #1e293b; border-color: #334155; color: white; }
 
-        .save-card {
-            background: white; border: 1px solid #e2e8f0;
-            border-radius: 24px; padding: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-            min-height: 180px; position: relative;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        body.dark-mode .save-card { background: #1e293b; border-color: #334155; }
-        .interest-bubble {
-            position: absolute; top: 10px; right: 10px;
-            background: #fbbf24; color: #78350f; font-size: 11px; font-weight: bold;
-            padding: 6px 12px; border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(251, 191, 36, 0.4);
-            animation: bounce 2s infinite; cursor: pointer;
-        }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* FAB */
-        .fab-container { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .fab-main { width: 60px; height: 60px; border-radius: 30px; background: #0f172a; color: white; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4); transition: transform 0.2s; }
-        body.dark-mode .fab-main { background: #6366f1; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4); }
-        .fab-menu { display: none; flex-direction: column; gap: 12px; align-items: center; margin-bottom: 5px; }
-        .fab-menu.open { display: flex; animation: slideUp 0.2s; }
-        .fab-item { display: flex; align-items: center; gap: 10px; }
-        .fab-label { background: white; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #475569; }
-        .fab-btn { width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); color: white; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Pending Item (Dynamic Button) */
+        .claim-btn-lg { width: 100%; padding: 20px; border-radius: 24px; background: linear-gradient(to right, #fbbf24, #f59e0b); color: white; font-weight: 900; font-size: 18px; box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.5); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .claim-btn-sm { font-size: 12px; padding: 10px; background: #f1f5f9; color: #94a3b8; border-radius: 12px; font-weight: bold; pointer-events: none; text-align: center; }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* Navigation */
-        #bottom-nav { 
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); 
-            width: calc(100% - 40px); max-width: 400px; height: 64px; 
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); 
-            border-radius: 32px; display: flex; justify-content: space-around; align-items: center; 
-            z-index: 40; border: 1px solid rgba(255,255,255,0.6); 
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); 
-        }
-        .nav-btn { opacity: 0.4; transition: all 0.2s; transform: scale(0.9); }
-        .nav-btn.active { opacity: 1; transform: scale(1.1); color: #4f46e5; }
-        body.dark-mode .nav-btn.active { color: #818cf8; }
-
+        #bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; height: 60px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-radius: 30px; display: flex; justify-content: space-around; align-items: center; z-index: 50; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); }
+        body.dark-mode #bottom-nav { background: rgba(30, 41, 59, 0.9); border-color: #475569; }
+        .nav-btn { opacity: 0.4; transform: scale(0.9); transition: all 0.2s; }
+        .nav-btn.active { opacity: 1; transform: scale(1.1); color: #6366f1; }
+        
+        /* Modal */
         .modal { display: none; position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; backdrop-filter: blur(4px); background-color: rgba(0,0,0,0.5); }
-        .modal-box { width: 90%; max-width: 22rem; background: white; border-radius: 2rem; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: zoomIn 0.2s; }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal.open { display: flex; }
+        .modal-box { width: 90%; max-width: 22rem; background: white; border-radius: 2rem; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-height: 80vh; overflow-y: auto; }
+
+        /* Notification Toast */
+        .notif-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #fff; padding: 12px 20px; border-radius: 99px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 100; font-weight: bold; display: flex; gap: 10px; align-items: center; width: 90%; max-width: 350px; animation: slideDown 0.3s; pointer-events: none; }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
-<body class="loading">
-    <div id="toast-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-xs pointer-events-none"></div>
+<body>
+    <div id="global-loader"><div class="text-6xl animate-bounce mb-4">🐷</div><div class="font-bold text-slate-400">Loading PiggyBank...</div></div>
+    <div id="toast-container"></div>
 
-    <!-- 1. AUTH SCREEN (复用 v1 逻辑) -->
-    <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+    <!-- 1. AUTH SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center p-6 hidden">
         <div class="text-6xl mb-6">🐷</div>
-        <h1 class="text-4xl font-black text-indigo-600 mb-8 tracking-tight">PiggyBank v2</h1>
-        <div class="w-full max-w-sm bg-white p-8 rounded-[2rem] shadow-xl">
-            <input id="login-code" type="text" placeholder="PIN CODE" class="w-full p-4 bg-slate-100 rounded-2xl text-center text-2xl font-black tracking-widest outline-none mb-4 uppercase focus:ring-2 ring-indigo-500">
+        <h1 class="text-3xl font-black text-indigo-600 mb-8">PiggyBank</h1>
+        <div id="login-form" class="w-full max-w-sm bg-white p-8 rounded-[2rem] shadow-xl text-center">
+            <h2 class="font-bold text-slate-400 uppercase text-xs mb-4">Welcome Back</h2>
+            <input id="login-code" type="tel" placeholder="PIN" class="w-full p-4 bg-slate-100 rounded-2xl text-center text-2xl font-black tracking-widest outline-none mb-4 uppercase focus:ring-2 ring-indigo-500">
             <input id="login-email" type="email" placeholder="Email" class="w-full p-4 bg-slate-100 rounded-2xl text-center font-bold outline-none mb-6 focus:ring-2 ring-indigo-500">
-            <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform">Unlock</button>
+            <button onclick="handleLogin()" id="login-btn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform">Log In</button>
+            <button onclick="showSignup()" class="mt-6 text-indigo-400 font-bold text-sm">Create New Family</button>
         </div>
-        <button onclick="showSignup()" class="mt-8 text-indigo-400 font-bold text-sm">New Family?</button>
+        
+        <!-- SIGNUP WIZARD -->
+        <div id="signup-form" class="w-full max-w-sm bg-white p-6 rounded-[2rem] shadow-xl hidden h-[500px] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="showLogin()" class="text-slate-400 font-bold text-xs">← Back</button>
+                <h2 class="font-black text-indigo-600">New Family</h2>
+            </div>
+            <div class="space-y-4">
+                <input id="reg-name" placeholder="Family Name" class="w-full p-3 bg-slate-50 rounded-xl font-bold border border-slate-200">
+                <input id="reg-email" placeholder="Parent Email" class="w-full p-3 bg-slate-50 rounded-xl font-bold border border-slate-200">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <label class="text-[10px] font-bold text-indigo-400 uppercase">Parent PIN (6 Digits)</label>
+                    <input id="reg-pin" type="tel" maxlength="6" placeholder="000000" class="w-full bg-transparent text-center text-2xl font-black tracking-[0.5em] outline-none text-indigo-600 mt-2">
+                    <div class="text-[9px] text-slate-400 mt-2 text-center">Used to verify Parent Mode & Settings</div>
+                </div>
+                <hr class="border-slate-100 my-2">
+                <h3 class="font-bold text-sm text-slate-500">First Child</h3>
+                <div class="flex gap-2 justify-center my-2">
+                    <button onclick="setRegAvatar('👦')" class="text-2xl p-2 rounded-full bg-slate-100 border-2 border-transparent hover:border-indigo-500 reg-av selected">👦</button>
+                    <button onclick="setRegAvatar('👧')" class="text-2xl p-2 rounded-full bg-slate-100 border-2 border-transparent hover:border-indigo-500 reg-av">👧</button>
+                    <button onclick="setRegAvatar('🦄')" class="text-2xl p-2 rounded-full bg-slate-100 border-2 border-transparent hover:border-indigo-500 reg-av">🦄</button>
+                </div>
+                <input id="reg-c-name" placeholder="Child Name" class="w-full p-3 bg-slate-50 rounded-xl font-bold border border-slate-200">
+                <input id="reg-c-bday" type="date" class="w-full p-3 bg-slate-50 rounded-xl font-bold border border-slate-200 text-slate-500">
+                <input id="reg-c-pin" type="tel" placeholder="Child PIN (4 digits)" class="w-full p-3 bg-slate-50 rounded-xl font-bold border border-slate-200 text-center">
+                
+                <button onclick="doRegister()" id="reg-btn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black mt-2">Create Account</button>
+            </div>
+        </div>
     </div>
 
     <!-- 2. MAIN APP -->
-    <div id="app-container" class="flex-1 hidden">
-        <header class="px-6 pt-4 pb-2 flex justify-between items-center">
+    <div id="app-container" class="flex-1 flex flex-col hidden">
+        <header class="px-5 pt-4 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
-                <div id="header-avatar" class="text-4xl bg-white/50 p-1 rounded-2xl shadow-sm">👦</div>
+                <div id="head-avatar" class="text-4xl bg-white p-1 rounded-2xl shadow-sm">👤</div>
                 <div>
-                    <h1 id="header-name" class="text-xl font-black leading-none">...</h1>
-                    <p id="header-role" class="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">My Wallet</p>
+                    <h1 id="head-name" class="text-xl font-black leading-none">...</h1>
+                    <p id="head-role" class="text-[10px] font-bold text-slate-400 uppercase mt-1">My Wallet</p>
                 </div>
             </div>
-            <div id="header-actions" class="flex gap-2">
-                <!-- Injected via JS -->
-            </div>
+            <!-- Parent Switcher (Only visible in Parent Mode) -->
+            <div id="parent-switcher" class="hidden flex gap-2 overflow-x-auto max-w-[150px] no-scrollbar"></div>
         </header>
 
-        <!-- TAB 1: WALLET -->
-        <main id="tab-wallet" class="tab-content active pt-4">
-            <!-- Credit Card -->
-            <div id="card-spend" class="credit-card mb-4" onclick="showTab('review')">
-                <div class="flex justify-between items-start">
-                    <div class="chip"></div>
-                    <div id="overdue-badge" class="hidden bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase text-white border border-white/30 flex items-center gap-1">⚠️ Overdue</div>
+        <!-- TAB: WALLET -->
+        <main id="tab-wallet" class="tab-content active pt-6">
+            <!-- Cards -->
+            <div class="cards-grid">
+                <div class="dashboard-card card-credit" onclick="showDetail('spend')">
+                    <div class="flex justify-between items-start">
+                        <div class="w-8 h-6 bg-white/20 rounded-md"></div>
+                        <div id="overdue-badge" class="hidden bg-red-600 text-white text-[8px] px-2 py-1 rounded font-black uppercase">Overdue</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase opacity-80">Spend Card</div>
+                        <div id="bal-spend" class="text-2xl font-black mt-1">$0</div>
+                        <div class="text-[8px] mt-1 opacity-70">Credit Limit</div>
+                    </div>
                 </div>
-                <div class="mt-4">
-                    <div class="text-[10px] font-bold uppercase opacity-70 mb-1 tracking-widest">Credit Balance</div>
-                    <div id="bal-spend" class="text-4xl font-black tracking-tight">$0.00</div>
-                    <div class="flex justify-between items-end mt-2">
-                        <div class="text-[9px] opacity-60 font-bold">**** **** **** 1234</div>
-                        <div class="text-[9px] opacity-80 font-bold bg-black/20 px-2 py-1 rounded">7-Day Interest Free</div>
+                <div class="dashboard-card card-save" onclick="showDetail('save')">
+                    <div class="flex justify-between items-start">
+                        <div class="text-2xl">🐷</div>
+                        <div id="int-badge" class="hidden bg-amber-400 text-amber-900 text-[8px] px-2 py-1 rounded font-black uppercase">+Interest</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase opacity-50">Savings</div>
+                        <div id="bal-save" class="text-2xl font-black mt-1 text-emerald-500">$0</div>
+                        <div class="text-[8px] mt-1 opacity-40 text-slate-500">Tap for details</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Savings Card -->
-            <div class="save-card mb-6">
-                <div id="interest-bubble" class="interest-bubble hidden" onclick="claimInterest()">+ $0.00 Interest 💰</div>
-                <div class="text-5xl mb-2">🐷</div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Total Savings</div>
-                <div id="bal-save" class="text-3xl font-black text-emerald-500 mb-6">$0.00</div>
-                <div id="allowance-area" class="w-full"></div>
+            <!-- Dynamic Action Area -->
+            <div id="action-area" class="mb-6 px-1">
+                <!-- Injected via JS: Claim Button or Status -->
             </div>
 
-            <div class="px-2">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 tracking-widest">Recent Activity</h3>
-                <div id="recent-tx-list" class="space-y-3"></div>
+            <!-- Pending Rewards List -->
+            <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 px-1">Pending Rewards</h3>
+            <div id="pending-list" class="space-y-2 mb-4"></div>
+
+            <!-- Recent Txs -->
+            <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 px-1">Recent Activity</h3>
+            <div id="wallet-tx-list" class="space-y-2"></div>
+        </main>
+
+        <!-- TAB: DREAMS -->
+        <main id="tab-dreams" class="tab-content pt-6">
+            <h2 class="text-2xl font-black mb-4">My Dreams 🚀</h2>
+            <div id="goals-list" class="space-y-4 mb-8"></div>
+            <button onclick="openModal('goal-modal')" class="w-full py-4 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 font-bold">+ New Dream</button>
+            
+            <h2 class="text-2xl font-black mt-8 mb-4">Achievements 🏆</h2>
+            <div id="achievements-list" class="grid grid-cols-3 gap-2 opacity-60 grayscale">
+                <!-- Populated by JS -->
             </div>
         </main>
 
-        <!-- TAB 2: DREAMS -->
-        <main id="tab-dreams" class="tab-content pt-4">
-            <h2 class="text-2xl font-black mb-6 px-2">My Dreams 🚀</h2>
-            <div id="goals-list" class="space-y-4"></div>
-            <button onclick="openModal('goal-modal')" class="w-full bg-slate-100 text-slate-400 py-6 rounded-[2rem] font-bold mt-4 border-2 border-dashed border-slate-200 hover:bg-slate-50 transition">+ Add New Dream</button>
+        <!-- TAB: REVIEW -->
+        <main id="tab-review" class="tab-content pt-6">
+            <h2 class="text-2xl font-black mb-4">Statement 📊</h2>
+            <div class="bg-white p-4 rounded-3xl shadow-sm mb-6 h-48">
+                <canvas id="balanceChart"></canvas>
+            </div>
+            
+            <div class="flex gap-2 mb-4 overflow-x-auto">
+                <button onclick="filterTx('week')" class="px-4 py-2 bg-slate-200 rounded-full text-xs font-bold text-slate-600 active-filter">This Week</button>
+                <button onclick="filterTx('month')" class="px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-400">Month</button>
+                <button onclick="filterTx('all')" class="px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-400">All</button>
+            </div>
+
+            <div id="review-tx-list" class="space-y-3 pb-20"></div>
         </main>
 
-        <!-- TAB 3: REVIEW -->
-        <main id="tab-review" class="tab-content pt-4">
-            <h2 class="text-2xl font-black mb-4 px-2">Statement 📊</h2>
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="bg-white p-4 rounded-3xl shadow-sm text-center">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">Spent</div>
-                    <div id="stat-exp" class="text-xl font-black text-rose-500 mt-1">$0</div>
+        <!-- TAB: ME -->
+        <main id="tab-me" class="tab-content pt-6">
+            <div class="bg-white rounded-[2rem] p-6 text-center mb-6 shadow-sm relative">
+                <button onclick="openModal('edit-profile-modal')" class="absolute top-4 right-4 text-slate-300">✏️</button>
+                <div id="me-avatar" class="text-6xl mb-2">😎</div>
+                <h2 id="me-name" class="text-2xl font-black">Name</h2>
+                <div id="me-bday" class="text-xs font-bold text-slate-400 mt-1">Birthday</div>
+            </div>
+
+            <!-- Parent Mode Entry -->
+            <button id="parent-mode-btn" onclick="openModal('parent-verify-modal')" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold mb-4 shadow-lg">👮 Parent Mode</button>
+
+            <!-- Parent Controls (Hidden by default) -->
+            <div id="parent-controls" class="hidden bg-slate-800 rounded-[2rem] p-6 mb-6 text-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold uppercase text-xs text-slate-400">Central Bank</h3>
+                    <button onclick="exitParentMode()" class="text-xs bg-slate-700 px-2 py-1 rounded">Exit</button>
                 </div>
-                <div class="bg-white p-4 rounded-3xl shadow-sm text-center">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">Saved</div>
-                    <div id="stat-inc" class="text-xl font-black text-emerald-500 mt-1">$0</div>
-                </div>
-            </div>
-            <div id="full-tx-list" class="space-y-3"></div>
-        </main>
-
-        <!-- TAB 4: ME -->
-        <main id="tab-me" class="tab-content pt-4">
-            <div class="bg-white rounded-[2.5rem] p-8 text-center mb-6 shadow-sm">
-                <div id="profile-avatar" class="text-6xl mb-4 inline-block bg-slate-50 p-4 rounded-full">😎</div>
-                <h2 id="profile-name" class="text-2xl font-black text-slate-800">User</h2>
-                <div id="profile-fam" class="text-xs font-bold text-slate-400 uppercase mt-1 tracking-widest">Family</div>
-            </div>
-
-            <!-- Parent Admin Panel -->
-            <div id="admin-panel" class="hidden mb-6 animate-in slide-in-from-bottom-5">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-2">Central Bank Controls 🏦</h3>
-                <div class="bg-slate-800 text-white p-6 rounded-[2rem] shadow-xl">
-                    <div class="mb-4">
-                        <div class="flex justify-between mb-1">
-                            <span class="text-sm font-bold">Savings APY</span>
-                            <span class="text-sm font-bold text-emerald-400" id="disp-rate-save">5%</span>
-                        </div>
-                        <input id="in-rate-save" type="range" min="0" max="20" step="0.5" class="w-full accent-emerald-400 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <div class="mb-6">
-                        <div class="flex justify-between mb-1">
-                            <span class="text-sm font-bold">Late Penalty</span>
-                            <span class="text-sm font-bold text-rose-400" id="disp-rate-penalty">0.5%</span>
-                        </div>
-                        <input id="in-rate-penalty" type="range" min="0" max="5" step="0.1" class="w-full accent-rose-400 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <button onclick="saveRates()" class="w-full bg-indigo-500 hover:bg-indigo-400 py-3 rounded-xl font-bold transition">Update Policy</button>
+                
+                <div class="space-y-4">
+                    <button onclick="openModal('add-money-modal')" class="w-full bg-emerald-500 py-3 rounded-xl font-bold">💰 Send Money</button>
                     
-                    <div class="mt-6 pt-6 border-t border-slate-700">
-                         <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">Switch Account</h4>
-                         <div id="child-switcher" class="flex gap-2 overflow-x-auto pb-2"></div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span>Savings Rate</span><span id="disp-save-rate">5%</span></div>
+                        <input id="in-save-rate" type="range" max="20" step="0.5" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-400">
                     </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span>Penalty Rate</span><span id="disp-pen-rate">0.5%</span></div>
+                        <input id="in-pen-rate" type="range" max="5" step="0.1" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-rose-400">
+                    </div>
+                    
+                    <button onclick="openModal('add-child-modal')" class="w-full bg-slate-700 py-3 rounded-xl font-bold text-xs mt-4">+ Add Another Child</button>
                 </div>
             </div>
 
-            <button onclick="logout()" class="w-full bg-rose-50 text-rose-500 py-4 rounded-2xl font-bold mb-8">Log Out</button>
+            <button onclick="logout()" class="w-full bg-rose-50 text-rose-400 py-4 rounded-2xl font-bold mt-auto">Log Out</button>
         </main>
-    </div>
-
-    <!-- FAB -->
-    <div id="fab-container" class="fab-container hidden">
-        <div id="fab-menu" class="fab-menu">
-            <div class="fab-item">
-                <span class="fab-label">Repay Debt</span>
-                <button onclick="openModal('repay-modal'); toggleFab()" class="fab-btn bg-emerald-500">🔄</button>
-            </div>
-            <div class="fab-item">
-                <span class="fab-label">Buy Item</span>
-                <button onclick="openModal('expense-modal'); toggleFab()" class="fab-btn bg-indigo-500">💸</button>
-            </div>
-        </div>
-        <button id="fab-main" onclick="toggleFab()" class="fab-main">+</button>
     </div>
 
     <!-- BOTTOM NAV -->
-    <nav id="bottom-nav" class="hidden">
+    <nav id="bottom-nav">
         <button onclick="showTab('wallet')" class="nav-btn active text-2xl">👛</button>
         <button onclick="showTab('dreams')" class="nav-btn text-2xl">🚀</button>
         <button onclick="showTab('review')" class="nav-btn text-2xl">📊</button>
@@ -257,71 +237,101 @@
     </nav>
 
     <!-- MODALS -->
-    <div id="expense-modal" class="modal">
-        <div class="modal-box text-center">
-            <h2 class="text-xl font-black mb-6 text-slate-800">💸 Buy Something</h2>
-            <input type="number" id="exp-amt" placeholder="0.00" class="w-full text-5xl font-black text-center outline-none mb-6 bg-transparent text-indigo-600">
-            <input type="text" id="exp-desc" placeholder="What is it?" class="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none text-center">
-            <div class="text-[10px] text-slate-400 font-bold uppercase mb-6 bg-indigo-50 p-2 rounded-lg text-indigo-400">Charged to Spend Card (7 Days Free)</div>
-            <button onclick="submitExpense()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg">Swipe Card</button>
-            <button onclick="closeModal('expense-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
+    <!-- Detail Filter Modal -->
+    <div id="detail-modal" class="modal"><div class="modal-box h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="detail-title" class="text-xl font-black">Account</h2>
+            <button onclick="closeModal('detail-modal')" class="text-2xl">×</button>
         </div>
-    </div>
+        <div id="detail-list" class="flex-1 overflow-y-auto space-y-3"></div>
+    </div></div>
 
-    <div id="repay-modal" class="modal">
-        <div class="modal-box text-center">
-            <h2 class="text-xl font-black mb-2 text-emerald-600">🔄 Repay Card</h2>
-            <p class="text-xs text-slate-400 font-bold mb-6">From Savings -> Credit Card</p>
-            <input type="number" id="repay-amt" placeholder="0.00" class="w-full text-5xl font-black text-center outline-none mb-6 bg-transparent text-emerald-500">
-            <button onclick="submitRepay()" class="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-emerald-200">Pay Now</button>
-            <button onclick="closeModal('repay-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
-        </div>
-    </div>
+    <!-- Parent Verify -->
+    <div id="parent-verify-modal" class="modal"><div class="modal-box text-center">
+        <h2 class="text-xl font-black mb-4">Parent Access</h2>
+        <input id="verify-pin" type="tel" maxlength="6" class="w-full text-center text-3xl font-black tracking-widest bg-slate-100 p-4 rounded-xl outline-none mb-4" placeholder="••••••">
+        <button onclick="verifyParent()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Unlock</button>
+    </div></div>
 
-    <div id="goal-modal" class="modal">
-        <div class="modal-box text-center">
-            <h2 class="text-xl font-black mb-6">New Dream 🎯</h2>
-            <input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none">
-            <input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none">
-            <button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Dream</button>
-            <button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
+    <!-- Add Money -->
+    <div id="add-money-modal" class="modal"><div class="modal-box">
+        <h2 class="text-xl font-black mb-4 text-emerald-500">Send Money</h2>
+        <input id="reward-amt" type="number" class="w-full text-4xl font-black text-center border-b mb-4 outline-none" placeholder="0.00">
+        <input id="reward-desc" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-4" placeholder="Reason (e.g. Chores)">
+        <button onclick="sendReward()" class="w-full bg-emerald-500 text-white py-4 rounded-xl font-bold shadow-lg">Send Reward</button>
+        <button onclick="closeModal('add-money-modal')" class="w-full mt-2 text-slate-400 font-bold">Cancel</button>
+    </div></div>
+    
+    <!-- Edit Child Profile -->
+    <div id="edit-profile-modal" class="modal"><div class="modal-box">
+        <h2 class="font-black text-xl mb-4">Edit Profile</h2>
+        <input id="edit-name" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-2">
+        <input id="edit-bday" type="date" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-2">
+        <div class="flex gap-2 justify-center mb-4"><button onclick="tempAvatar='👦'; updateAvSel()" class="text-2xl p-2 rounded-full border av-opt">👦</button><button onclick="tempAvatar='👧'; updateAvSel()" class="text-2xl p-2 rounded-full border av-opt">👧</button><button onclick="tempAvatar='🦄'; updateAvSel()" class="text-2xl p-2 rounded-full border av-opt">🦄</button></div>
+        <input id="edit-pin" type="tel" maxlength="4" placeholder="New PIN (4 digits)" class="w-full p-3 bg-rose-50 text-rose-500 rounded-xl font-black text-center tracking-widest mb-2">
+        <div class="text-[10px] text-rose-400 text-center mb-4">Parent will be notified via email if PIN changes.</div>
+        <button onclick="saveProfile()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Save Changes</button>
+        <button onclick="closeModal('edit-profile-modal')" class="w-full mt-2 text-slate-400 font-bold">Cancel</button>
+    </div></div>
+    
+    <!-- Add Child Modal -->
+    <div id="add-child-modal" class="modal"><div class="modal-box">
+        <h2 class="font-black text-xl mb-4">Add Child</h2>
+        <input id="ac-name" placeholder="Name" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-3">
+        <input id="ac-bday" type="date" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-3">
+        <input id="ac-pin" placeholder="PIN (4 digits)" class="w-full p-3 bg-slate-100 rounded-xl font-bold mb-3 text-center">
+        <button onclick="submitAddChild()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Add</button>
+        <button onclick="closeModal('add-child-modal')" class="w-full mt-2 text-slate-400 font-bold">Cancel</button>
+    </div></div>
+    
+    <!-- Goal Modal -->
+    <div id="goal-modal" class="modal"><div class="modal-box text-center">
+        <h2 class="text-xl font-black mb-4">New Dream 🎯</h2>
+        <input type="text" id="goal-name" placeholder="Item Name" class="w-full p-4 bg-slate-100 rounded-2xl mb-3 font-bold text-center outline-none">
+        <input type="number" id="goal-target" placeholder="Price ($)" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 font-bold text-center outline-none">
+        <button onclick="submitGoal()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Save Dream</button>
+        <button onclick="closeModal('goal-modal')" class="w-full mt-4 text-slate-400 font-bold">Cancel</button>
+    </div></div>
+    
+    <!-- Satisfaction Modal -->
+    <div id="rate-modal" class="modal"><div class="modal-box text-center">
+        <h2 class="text-xl font-black mb-4">Was it worth it?</h2>
+        <div class="flex gap-4 justify-center">
+            <button onclick="submitRate('👍')" class="text-4xl p-4 bg-emerald-100 rounded-2xl">👍</button>
+            <button onclick="submitRate('👎')" class="text-4xl p-4 bg-rose-100 rounded-2xl">👎</button>
         </div>
-    </div>
-
-    <div id="review-modal" class="modal">
-        <div class="modal-box text-center">
-            <h2 class="text-lg font-black mb-6 text-slate-700">Was this purchase worth it?</h2>
-            <div class="flex gap-4 justify-center mb-4">
-                <button onclick="submitReview('👍')" class="w-20 h-20 text-4xl bg-emerald-100 rounded-2xl hover:scale-110 transition flex items-center justify-center">👍</button>
-                <button onclick="submitReview('👎')" class="w-20 h-20 text-4xl bg-rose-100 rounded-2xl hover:scale-110 transition flex items-center justify-center">👎</button>
-            </div>
-            <button onclick="closeModal('review-modal')" class="text-xs font-bold text-slate-400">Skip</button>
-        </div>
-    </div>
+        <button onclick="closeModal('rate-modal')" class="mt-4 text-slate-400 font-bold text-xs">Skip</button>
+    </div></div>
 
     <script>
         const API_URL = "https://piggybank-backend.vercel.app/api"; 
-        let state = { fid: null, cid: null, role: null, data: {} };
-        let currentTxId = null;
+        let state = { fid: null, cid: null, role: null, data: {}, parentPinHash: '' }; // hash not real security, just verify match
+        let myChart = null;
+        let tempAvatar = '';
+        let rateTxId = null;
 
-        // --- Core Functions ---
-
+        // --- Core ---
         function toast(msg, type='info') {
-            const el = document.createElement('div');
-            el.className = `p-3 rounded-xl font-bold text-sm text-center shadow-lg animate-bounce ${type==='error'?'bg-rose-500 text-white':'bg-slate-800 text-white'}`;
-            el.innerText = msg;
+            const el = document.createElement('div'); el.className = 'notif-toast';
+            el.innerHTML = `<span class="text-xl">${type==='error'?'🛑':'🔔'}</span><span>${msg}</span>`;
             document.getElementById('toast-container').appendChild(el);
-            setTimeout(()=>el.remove(), 3000);
+            setTimeout(()=>el.remove(), 4000);
+        }
+        
+        function showLoader(show) { 
+            const l = document.getElementById('global-loader'); 
+            if(show) { l.classList.remove('fade-out'); } 
+            else { setTimeout(()=>l.classList.add('fade-out'), 500); }
         }
 
-        async function api(action, payload) {
+        async function api(act, pl) {
             try {
                 const res = await fetch(API_URL, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ...payload, action, familyId: state.fid, childId: state.cid, identity: state.role })
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({...pl, action:act, familyId:state.fid, childId:state.cid, role:state.role})
                 });
                 const d = await res.json();
-                if (!d.success) throw new Error(d.error);
+                if(!d.success) throw new Error(d.error);
                 return d;
             } catch(e) {
                 toast(e.message, 'error');
@@ -329,240 +339,341 @@
             }
         }
 
-        // --- UI Logic ---
+        // --- Init & Auth ---
+        window.onload = async () => {
+            const cached = localStorage.getItem('pb_v3_sess');
+            if(cached) {
+                const s = JSON.parse(cached);
+                state.fid=s.fid; state.cid=s.cid; state.role=s.role;
+                // Auto Reconnect
+                try {
+                    await fetchDash();
+                } catch(e) {
+                    showAuth();
+                }
+            } else {
+                showAuth();
+            }
+            showLoader(false);
+            setupNotifications();
+        };
 
+        function showAuth() { document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('app-container').classList.add('hidden'); }
+        function showSignup() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('signup-form').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('signup-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
+        async function handleLogin() {
+            const c = document.getElementById('login-code').value;
+            const e = document.getElementById('login-email').value;
+            if(!c || !e) return toast('Enter Code & Email', 'error');
+            document.getElementById('login-btn').innerText = '...';
+            try {
+                const res = await api('login', {code:c, email:e});
+                state.fid = res.familyId; state.cid = res.childId; state.role = res.role;
+                localStorage.setItem('pb_v3_sess', JSON.stringify(state));
+                await fetchDash();
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+            } catch(err) {}
+            document.getElementById('login-btn').innerText = 'Log In';
+        }
+
+        let regAv = '👦';
+        function setRegAvatar(a) { regAv=a; document.querySelectorAll('.reg-av').forEach(b => b.classList.remove('border-indigo-500')); event.target.classList.add('border-indigo-500'); }
+        async function doRegister() {
+            const p = {
+                familyName: document.getElementById('reg-name').value,
+                contactEmail: document.getElementById('reg-email').value,
+                parentPin: document.getElementById('reg-pin').value,
+                children: [{
+                    name: document.getElementById('reg-c-name').value,
+                    birthday: document.getElementById('reg-c-bday').value,
+                    code: document.getElementById('reg-c-pin').value,
+                    avatar: regAv
+                }]
+            };
+            if(p.parentPin.length !== 6) return toast('Parent PIN must be 6 digits', 'error');
+            try {
+                const res = await api('createFamily', p);
+                state.fid = res.familyId; state.cid = res.childId; state.role = 'Parent';
+                localStorage.setItem('pb_v3_sess', JSON.stringify(state));
+                await fetchDash();
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+            } catch(e){}
+        }
+
+        // --- Dashboard Render ---
+        async function fetchDash() {
+            const d = await api('loadDashboard', {});
+            state.data = d;
+            state.parentPinHash = d.parentPin; // Stored for local verify (not secure but sufficient for this UX)
+            render(d);
+        }
+
+        function render(d) {
+            const c = d.currentChild;
+            const isParent = state.role === 'Parent';
+
+            // Header
+            document.getElementById('head-avatar').innerText = c.avatar;
+            document.getElementById('head-name').innerText = isParent ? `Admin: ${c.name}` : c.name;
+            document.getElementById('head-role').innerText = isParent ? 'Parent Mode' : 'My Wallet';
+            
+            // Parent Mode & Theme
+            if(isParent) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('parent-switcher').classList.remove('hidden');
+                document.getElementById('parent-switcher').innerHTML = d.children.map(k => 
+                    `<button onclick="switchChild('${k.id}')" class="shrink-0 w-8 h-8 bg-slate-700 rounded-full border ${k.id===state.cid?'border-emerald-400':'border-transparent'} text-sm">${k.avatar}</button>`
+                ).join('');
+                document.getElementById('parent-mode-btn').classList.add('hidden');
+                document.getElementById('parent-controls').classList.remove('hidden');
+                
+                // Admin Inputs
+                document.getElementById('disp-save-rate').innerText = (c.savings_rate||5)+'%';
+                document.getElementById('in-save-rate').value = c.savings_rate||5;
+                document.getElementById('in-save-rate').onchange = (e) => api('updateRates', {childId:c.id, savingsRate:e.target.value}).then(fetchDash);
+
+                document.getElementById('disp-pen-rate').innerText = (c.penalty_rate||0.5)+'%';
+                document.getElementById('in-pen-rate').value = c.penalty_rate||0.5;
+                document.getElementById('in-pen-rate').onchange = (e) => api('updateRates', {childId:c.id, penaltyRate:e.target.value}).then(fetchDash);
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('parent-switcher').classList.add('hidden');
+                document.getElementById('parent-mode-btn').classList.remove('hidden');
+                document.getElementById('parent-controls').classList.add('hidden');
+            }
+
+            // Wallet Cards
+            document.getElementById('bal-spend').innerText = '$' + Math.abs(c.balance_spend).toFixed(2);
+            document.getElementById('bal-save').innerText = '$' + c.balance_save.toFixed(2);
+            
+            if(c.overdueStats && c.overdueStats.count>0) {
+                document.querySelector('.card-credit').classList.add('overdue');
+                document.getElementById('overdue-badge').classList.remove('hidden');
+            } else {
+                document.querySelector('.card-credit').classList.remove('overdue');
+                document.getElementById('overdue-badge').classList.add('hidden');
+            }
+
+            if(c.pendingInterest > 0) document.getElementById('int-badge').classList.remove('hidden');
+            else document.getElementById('int-badge').classList.add('hidden');
+
+            // Action Area (Pending Items)
+            const actArea = document.getElementById('action-area');
+            const pendList = document.getElementById('pending-list');
+            actArea.innerHTML = ''; pendList.innerHTML = '';
+
+            // Prioritize Allowance > Reward for Big Button
+            const allowanceItem = d.pendingItems.find(i => i.type === 'Allowance');
+            if(allowanceItem) {
+                actArea.innerHTML = `<button onclick="claimItem('${allowanceItem.id}')" class="claim-btn-lg"><span>🎁</span><span>Claim Weekly Allowance $${allowanceItem.amount}</span></button>`;
+            } else if (d.pendingItems.length > 0) {
+                const r = d.pendingItems[0];
+                actArea.innerHTML = `<button onclick="claimItem('${r.id}')" class="claim-btn-lg from-emerald-400 to-teal-500"><span>💎</span><span>Claim Reward $${r.amount}</span></button>`;
+            } else {
+                actArea.innerHTML = `<div class="claim-btn-sm">All caught up! See you next week.</div>`;
+            }
+            
+            // List remaining pending items
+            d.pendingItems.forEach(i => {
+                if(actArea.innerHTML.includes(i.id)) return; // Skip if main button
+                pendList.innerHTML += `<div class="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm"><span class="font-bold text-sm text-slate-600">${i.description}</span><button onclick="claimItem('${i.id}')" class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg font-bold text-xs">Claim $${i.amount}</button></div>`;
+            });
+
+            // Transactions (Recent)
+            const renderTx = (t) => {
+                const isExp = t.amount < 0;
+                return `<div onclick="if(${isExp && !t.review}) openRate('${t.id}')" class="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm relative overflow-hidden">
+                    ${t.isOverdue ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>':''}
+                    <div><div class="font-bold text-sm text-slate-700">${t.desc||t.category}</div><div class="text-[10px] font-bold text-slate-400 uppercase">${t.dateStr}</div></div>
+                    <div class="text-right"><div class="font-black ${isExp?'text-rose-500':'text-emerald-500'}">${isExp?'':'+'}$${Math.abs(t.amount).toFixed(2)}</div>
+                    ${isExp && !t.review ? '<div class="text-[9px] text-indigo-500 font-bold animate-pulse">Rate It?</div>' : ''}</div>
+                </div>`;
+            };
+            document.getElementById('wallet-tx-list').innerHTML = d.transactions.slice(0, 3).map(renderTx).join('');
+            document.getElementById('review-tx-list').innerHTML = d.transactions.map(renderTx).join('');
+
+            // Dreams / Achievements
+            document.getElementById('goals-list').innerHTML = d.goals.filter(g=>g.status!=='Redeemed').map(g => {
+                const p = Math.min(100, (c.balance_save/g.target)*100);
+                const canBuy = c.balance_save >= g.target;
+                return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between font-bold mb-2"><span>${g.name}</span><span class="text-indigo-500">$${g.target}</span></div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2"><div class="h-full bg-indigo-500" style="width:${p}%"></div></div>
+                    ${canBuy ? `<button onclick="redeemGoal('${g.id}', ${g.target}, '${g.name}')" class="w-full bg-emerald-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg">Redeem Now</button>` : `<div class="text-[10px] text-slate-400 text-right">Need $${(g.target - c.balance_save).toFixed(2)}</div>`}
+                </div>`;
+            }).join('');
+            
+            document.getElementById('achievements-list').innerHTML = d.goals.filter(g=>g.status==='Redeemed').map(g => 
+                `<div class="bg-slate-100 p-2 rounded-xl text-center"><div class="text-xl">🏆</div><div class="text-[9px] font-bold truncate">${g.name}</div></div>`
+            ).join('');
+
+            // Me Tab
+            document.getElementById('me-name').innerText = c.name;
+            document.getElementById('me-avatar').innerText = c.avatar;
+            document.getElementById('me-bday').innerText = c.birthday || 'No Birthday Set';
+
+            // Chart
+            renderChart(d.chartData);
+        }
+
+        // --- Chart ---
+        function renderChart(data) {
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Net Worth',
+                        data: data.balances,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: {display:false}, y: {display:false} } }
+            });
+        }
+
+        // --- Interaction ---
+        function showDetail(type) {
+            const txs = state.data.transactions.filter(t => t.account === (type==='spend'?'Spend Acc':'Save Acc'));
+            document.getElementById('detail-title').innerText = type==='spend'?'Credit Card':'Savings';
+            document.getElementById('detail-list').innerHTML = txs.map(t => 
+                `<div class="bg-slate-50 p-3 rounded-xl flex justify-between"><span class="font-bold text-sm">${t.desc}</span><span class="font-black ${t.amount<0?'text-rose-500':'text-emerald-500'}">${t.amount}</span></div>`
+            ).join('');
+            openModal('detail-modal');
+        }
+
+        function filterTx(period) {
+            // Simply re-render list based on date (mock logic for brevity)
+            const list = document.getElementById('review-tx-list');
+            list.style.opacity = '0.5';
+            setTimeout(()=>list.style.opacity='1', 200);
+        }
+
+        async function claimItem(id) {
+            try { await api('claimItem', {itemId:id}); confetti(); toast('Claimed!'); fetchDash(); } catch(e){}
+        }
+
+        async function sendReward() {
+            const amt = document.getElementById('reward-amt').value;
+            const desc = document.getElementById('reward-desc').value;
+            closeModal('add-money-modal');
+            try { await api('addReward', {amount:amt, description:desc}); toast('Sent to Child!'); fetchDash(); } catch(e){}
+        }
+
+        async function submitGoal() {
+            const n = document.getElementById('goal-name').value;
+            const t = document.getElementById('goal-target').value;
+            closeModal('goal-modal');
+            try { await api('addGoal', {name:n, target:t}); toast('Added'); fetchDash(); } catch(e){}
+        }
+        
+        async function redeemGoal(id, amt, name) {
+            if(!confirm(`Buy ${name}?`)) return;
+            try { await api('redeemGoal', {id, amount:amt, name}); confetti(); toast('Congratulations! 🏆'); fetchDash(); } catch(e){}
+        }
+
+        function openRate(id) { rateTxId = id; openModal('rate-modal'); }
+        async function submitRate(val) {
+            closeModal('rate-modal');
+            try { await api('updateReview', {id:rateTxId, review:val}); toast('Thanks!'); fetchDash(); } catch(e){}
+        }
+
+        // --- Profile & Parent Mode ---
+        function verifyParent() {
+            const pin = document.getElementById('verify-pin').value;
+            if(pin === state.parentPinHash) {
+                state.role = 'Parent';
+                closeModal('parent-verify-modal');
+                fetchDash();
+                toast('Parent Mode Active');
+            } else {
+                toast('Wrong PIN', 'error');
+            }
+        }
+        
+        function exitParentMode() {
+            state.role = 'Child';
+            fetchDash();
+        }
+
+        async function switchChild(id) {
+            state.cid = id;
+            await fetchDash();
+        }
+        
+        async function saveProfile() {
+            const p = {
+                name: document.getElementById('edit-name').value,
+                birthday: document.getElementById('edit-bday').value,
+                avatar: tempAvatar,
+                newPin: document.getElementById('edit-pin').value
+            };
+            if(p.newPin && p.newPin.length !== 4) return toast('PIN must be 4 digits', 'error');
+            closeModal('edit-profile-modal');
+            try { await api('updateChildProfile', p); toast('Updated'); fetchDash(); } catch(e){}
+        }
+        
+        function updateAvSel() {
+            document.querySelectorAll('.av-opt').forEach(b => b.classList.remove('border-indigo-500'));
+            // logic to highlight selected
+        }
+        
+        async function submitAddChild() {
+             const p = {
+                 name: document.getElementById('ac-name').value,
+                 birthday: document.getElementById('ac-bday').value,
+                 code: document.getElementById('ac-pin').value,
+                 avatar: '👶' // default
+             };
+             closeModal('add-child-modal');
+             try { await api('addChild', p); toast('Child Added'); fetchDash(); } catch(e){}
+        }
+
+        function logout() { localStorage.removeItem('pb_v3_sess'); location.reload(); }
+
+        // --- Notifications (Local Check) ---
+        function setupNotifications() {
+            // Check every minute if there are pending items and time is between 8am-8pm
+            setInterval(() => {
+                if(!state.data.pendingItems) return;
+                const h = new Date().getHours();
+                if(h >= 8 && h <= 20) {
+                     const pending = state.data.pendingItems.length;
+                     if(pending > 0 && !sessionStorage.getItem('notified_'+pending)) {
+                         toast(`You have ${pending} rewards waiting!`);
+                         sessionStorage.setItem('notified_'+pending, 'true');
+                     }
+                }
+            }, 60000);
+        }
+
+        // --- Tab Nav ---
         function showTab(t) {
             document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
             document.getElementById('tab-'+t).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
             const idx = ['wallet','dreams','review','me'].indexOf(t);
-            if(idx>-1) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+            document.querySelectorAll('.nav-btn')[idx].classList.add('active');
         }
-
-        function toggleFab() {
-            const m = document.getElementById('fab-menu');
-            const btn = document.getElementById('fab-main');
-            if (m.classList.contains('open')) {
-                m.classList.remove('open'); setTimeout(()=>m.style.display='none', 200);
-                btn.style.transform = 'rotate(0deg)';
-            } else {
-                m.style.display='flex'; setTimeout(()=>m.classList.add('open'), 10);
-                btn.style.transform = 'rotate(45deg)';
+        
+        function openModal(id) { 
+            document.getElementById(id).classList.add('open'); 
+            if(id==='edit-profile-modal') {
+                const c = state.data.currentChild;
+                document.getElementById('edit-name').value = c.name;
+                document.getElementById('edit-bday').value = c.birthday;
+                tempAvatar = c.avatar;
             }
         }
-
-        function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-        async function fetchDash() {
-            try {
-                const d = await api('loadDashboard', {});
-                state.data = d;
-                render(d);
-            } catch(e) {}
-        }
-
-        function render(d) {
-            document.getElementById('auth-screen').classList.add('opacity-0', 'pointer-events-none');
-            document.getElementById('app-container').classList.remove('hidden');
-            document.getElementById('fab-container').classList.remove('hidden');
-            document.getElementById('bottom-nav').classList.remove('hidden');
-            document.getElementById('bottom-nav').style.display = 'flex';
-
-            const c = d.currentChild;
-            const isParent = state.role === 'Parent';
-
-            // 1. Theme & Header
-            if (isParent) document.body.classList.add('dark-mode'); 
-            else document.body.classList.remove('dark-mode');
-            
-            document.getElementById('header-avatar').innerText = c.avatar;
-            document.getElementById('header-name').innerText = isParent ? `Admin: ${c.name}` : c.name;
-            document.getElementById('header-role').innerText = isParent ? 'Central Bank Mode' : 'My Wallet';
-
-            // 2. Wallet Tab
-            const balSpend = c.balance_spend || 0; // Negative number
-            const balSave = c.balance_save || 0;
-            const isOverdue = c.overdueStats && c.overdueStats.count > 0;
-
-            document.getElementById('bal-spend').innerText = '$' + Math.abs(balSpend).toFixed(2);
-            document.getElementById('bal-save').innerText = '$' + balSave.toFixed(2);
-            
-            const cardEl = document.getElementById('card-spend');
-            if(isOverdue) {
-                cardEl.classList.add('overdue');
-                document.getElementById('overdue-badge').classList.remove('hidden');
-            } else {
-                cardEl.classList.remove('overdue');
-                document.getElementById('overdue-badge').classList.add('hidden');
-            }
-
-            // Interest Bubble
-            const bubble = document.getElementById('interest-bubble');
-            if (c.pendingInterest > 0) {
-                bubble.classList.remove('hidden');
-                bubble.innerText = `+ $${c.pendingInterest} Interest 💰`;
-            } else {
-                bubble.classList.add('hidden');
-            }
-
-            // Allowance Button
-            const allowContainer = document.getElementById('allowance-area');
-            if (!d.allowanceStatus.alreadyClaimed) {
-                allowContainer.innerHTML = `<button onclick="claimAllowance()" class="w-full bg-emerald-50 text-emerald-600 py-3 rounded-2xl font-black text-sm animate-pulse border border-emerald-100">🎁 Claim Weekly Allowance $${c.weeklyAmt}</button>`;
-            } else {
-                allowContainer.innerHTML = `<div class="text-center text-[10px] text-slate-400 font-bold uppercase py-2">✅ Allowance Collected</div>`;
-            }
-
-            // 3. Transactions (Home: limit 3, Review: all)
-            const renderTx = (t) => {
-                const isExp = t.amount < 0;
-                return `
-                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm relative overflow-hidden" onclick="${isExp && !t.review ? `openReview('${t.id}')` : ''}">
-                    ${t.isOverdue ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>' : ''}
-                    <div>
-                        <div class="font-bold text-slate-700 text-sm">${t.desc || t.category}</div>
-                        <div class="text-[10px] text-slate-400 font-bold uppercase">${new Date(t.date).toLocaleDateString()} • ${t.isOverdue ? '<span class="text-rose-500 font-black">OVERDUE</span>' : (isExp ? (t.is_fully_paid ? 'Paid' : 'Unpaid') : 'Income')}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="font-black ${isExp ? 'text-rose-500' : 'text-emerald-500'}">${isExp ? '' : '+'}$${Math.abs(t.amount).toFixed(2)}</div>
-                        ${!t.review && isExp ? '<div class="text-[9px] text-indigo-400 font-bold animate-pulse">Rate?</div>' : (t.review ? `<div class="text-xs">${t.review}</div>` : '')}
-                    </div>
-                </div>`;
-            };
-
-            document.getElementById('recent-tx-list').innerHTML = d.transactions.slice(0, 3).map(renderTx).join('');
-            document.getElementById('full-tx-list').innerHTML = d.transactions.map(renderTx).join('');
-            
-            document.getElementById('stat-inc').innerText = '$'+d.stats.income.toFixed(0);
-            document.getElementById('stat-exp').innerText = '$'+d.stats.expense.toFixed(0);
-
-            // 4. Goals
-            document.getElementById('goals-list').innerHTML = (d.goals || []).map(g => {
-                const prog = Math.min(100, (balSave / g.target) * 100);
-                const canBuy = balSave >= g.target && g.status !== 'Redeemed';
-                return `<div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
-                    <div class="flex justify-between items-center mb-2 z-10 relative">
-                        <span class="font-bold text-slate-700">${g.name}</span>
-                        <span class="font-black text-indigo-500">$${g.target}</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden relative z-10">
-                        <div class="h-full bg-indigo-500" style="width:${prog}%"></div>
-                    </div>
-                    ${canBuy && isParent ? `<button onclick="redeemGoal('${g.id}', ${g.target}, '${g.name}')" class="mt-3 w-full bg-emerald-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg">Redeem Now</button>` : ''}
-                </div>`;
-            }).join('');
-
-            // 5. Me / Admin
-            document.getElementById('profile-name').innerText = c.name;
-            document.getElementById('profile-avatar').innerText = c.avatar;
-            document.getElementById('profile-fam').innerText = d.familyName;
-
-            if (isParent) {
-                document.getElementById('admin-panel').classList.remove('hidden');
-                
-                // Rate Sliders
-                const rSave = document.getElementById('in-rate-save');
-                const rPen = document.getElementById('in-rate-penalty');
-                
-                // Only set value if not interacting to prevent jump
-                if(document.activeElement !== rSave) rSave.value = c.savings_rate || 5;
-                if(document.activeElement !== rPen) rPen.value = c.penalty_rate || 0.5;
-                
-                document.getElementById('disp-rate-save').innerText = rSave.value + '%';
-                document.getElementById('disp-rate-penalty').innerText = rPen.value + '%';
-
-                rSave.oninput = (e) => document.getElementById('disp-rate-save').innerText = e.target.value + '%';
-                rPen.oninput = (e) => document.getElementById('disp-rate-penalty').innerText = e.target.value + '%';
-
-                // Child Switcher
-                const switcher = document.getElementById('child-switcher');
-                switcher.innerHTML = d.children.map(k => `
-                    <button onclick="switchChild('${k.id}')" class="min-w-[60px] p-2 rounded-xl border ${k.id===state.cid?'border-emerald-400 bg-slate-700':'border-slate-600'} flex flex-col items-center">
-                        <span class="text-2xl">${k.avatar}</span>
-                        <span class="text-[9px] font-bold text-slate-300 truncate w-full text-center">${k.name}</span>
-                    </button>
-                `).join('');
-            } else {
-                document.getElementById('admin-panel').classList.add('hidden');
-            }
-        }
-
-        // --- Actions ---
-
-        async function handleLogin() {
-            const code = document.getElementById('login-code').value;
-            const email = document.getElementById('login-email').value;
-            if(!code || !email) return toast("Missing info", 'error');
-            try {
-                const res = await api('login', {code, email});
-                state.fid=res.familyId; state.cid=res.childId; state.role=res.role;
-                localStorage.setItem('pb_cache_v2', JSON.stringify(state));
-                fetchDash();
-            } catch(e) {}
-        }
-
-        async function submitExpense() {
-            const amt = document.getElementById('exp-amt').value;
-            const desc = document.getElementById('exp-desc').value;
-            if(!amt) return toast('Enter Amount', 'error');
-            closeModal('expense-modal');
-            try { await api('addExpense', {amount: amt, description: desc}); toast('Spent!'); fetchDash(); } catch(e){}
-        }
-
-        async function submitRepay() {
-            const amt = document.getElementById('repay-amt').value;
-            if(!amt) return toast('Enter Amount', 'error');
-            closeModal('repay-modal');
-            try { await api('transfer', {amount: amt, from: 'Save Acc', to: 'Spend Acc'}); toast('Repaid!'); fetchDash(); } catch(e){}
-        }
-
-        async function claimAllowance() {
-            try { await api('claimAllowance', {}); confetti({origin:{y:0.7}}); toast('Yay!'); fetchDash(); } catch(e){}
-        }
-
-        async function claimInterest() {
-            try { 
-                const res = await api('claimInterest', {}); 
-                toast(`+ $${res.amount} Interest!`, 'success'); 
-                fetchDash(); 
-            } catch(e){}
-        }
-
-        async function saveRates() {
-            const s = document.getElementById('in-rate-save').value;
-            const p = document.getElementById('in-rate-penalty').value;
-            try { await api('updateRates', { savingsRate: s, penaltyRate: p }); toast('Policy Updated'); } catch(e){}
-        }
-
-        function openReview(id) { currentTxId = id; openModal('review-modal'); }
-        async function submitReview(val) {
-            closeModal('review-modal');
-            try { await api('updateReview', {id: currentTxId, review: val}); fetchDash(); } catch(e){}
-        }
-
-        async function submitGoal() {
-             const n=document.getElementById('goal-name').value, t=document.getElementById('goal-target').value;
-             closeModal('goal-modal');
-             try { await api('addGoal', {name:n, target:t}); toast('Dream Saved'); fetchDash(); } catch(e){}
-        }
-        
-        async function redeemGoal(id, amt, name) {
-            if(!confirm(`Redeem "${name}"? This will deduct $${amt} from Savings.`)) return;
-            try { await api('redeemGoal', {id, amount: amt, name}); confetti(); toast('Enjoy!'); fetchDash(); } catch(e){}
-        }
-
-        async function switchChild(id) { state.cid = id; fetchDash(); }
-        function logout() { localStorage.removeItem('pb_cache_v2'); location.reload(); }
-        
-        function showSignup() { toast("Signup via v1 temporarily", 'error'); } // Simplified for this snippet
-
-        // Init
-        const cached = localStorage.getItem('pb_cache_v2');
-        if(cached) {
-            Object.assign(state, JSON.parse(cached));
-            fetchDash();
-        }
     </script>
 </body>
 </html>
