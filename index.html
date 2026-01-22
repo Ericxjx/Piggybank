@@ -2,46 +2,50 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Piggybank: Wealth RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Energy Quest</title>
 
-    <link rel="manifest" href="./manifest.json">
-    
+    <link rel="manifest" href="manifest.json">
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Piggybank">
-    <link rel="apple-touch-icon" href="./icon.png">
-
-    <link rel="icon" type="image/png" href="./icon.png">
+    <meta name="apple-mobile-web-app-title" content="Energy Quest">
     
-    <meta name="theme-color" content="#FFD700">
+    <meta name="theme-color" content="#ffffff">
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
 
     <style>
-        /* 简单的基础样式，你可以替换为你自己的 CSS */
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        #app { padding: 20px; text-align: center; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #ffffff; 
+        }
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
-
-    <div id="app">
-        <h1>正在加载 Piggybank...</h1>
-    </div>
+    <iframe src="https://piggybank-v2-wealth-rpg-573344990233.us-west1.run.app" allow="fullscreen"></iframe>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => {
-                        console.log('PWA ServiceWorker 注册成功: ', registration.scope);
-                    })
-                    .catch(err => {
-                        console.log('PWA ServiceWorker 注册失败: ', err);
-                    });
+                    .then(reg => console.log('PWA Shell Ready:', reg.scope))
+                    .catch(err => console.log('PWA Setup Failed:', err));
             });
         }
     </script>
-
-    <script src="./main.js"></script>
 </body>
 </html>
